@@ -23,3 +23,4 @@ Run `Minecraft` from the build output directory.
 
 The texture atlas is generated in memory, so no external asset files are required.
 
+The HUD shows your coordinates, flying state, and targeted block. A center crosshair and wireframe selection box make block editing precise; fog, a sky gradient, and textured block borders improve depth perception.

@@ -31,4 +31,6 @@ Shader::~Shader() { if (m_program) glDeleteProgram(m_program); }
 void Shader::use() const { glUseProgram(m_program); }
 void Shader::setMat4(const char* n, const glm::mat4& v) const { glUniformMatrix4fv(glGetUniformLocation(m_program, n), 1, GL_FALSE, glm::value_ptr(v)); }
 void Shader::setInt(const char* n, int v) const { glUniform1i(glGetUniformLocation(m_program, n), v); }
-
+void Shader::setFloat(const char* n, float v) const { glUniform1f(glGetUniformLocation(m_program, n), v); }
+void Shader::setVec3(const char* n, const glm::vec3& v) const { glUniform3fv(glGetUniformLocation(m_program, n), 1, glm::value_ptr(v)); }
+void Shader::setVec4(const char* n, const glm::vec4& v) const { glUniform4fv(glGetUniformLocation(m_program, n), 1, glm::value_ptr(v)); }

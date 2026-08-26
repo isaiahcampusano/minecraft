@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
+#include <iomanip>
+#include <sstream>
 
 Application::Application(){
   if(!glfwInit())throw std::runtime_error("Could not initialize GLFW");
@@ -18,7 +20,8 @@ Application::~Application(){m_renderer.reset();if(m_window)glfwDestroyWindow(m_w
 void Application::cursor(GLFWwindow*w,double x,double y){auto*a=static_cast<Application*>(glfwGetWindowUserPointer(w));if(!a->m_captured)return;if(a->m_firstMouse){a->m_lastX=x;a->m_lastY=y;a->m_firstMouse=false;}a->m_camera.look(static_cast<float>(x-a->m_lastX),static_cast<float>(a->m_lastY-y));a->m_lastX=x;a->m_lastY=y;}
 void Application::scroll(GLFWwindow*w,double,double y){auto*a=static_cast<Application*>(glfwGetWindowUserPointer(w));a->m_camera.fov=std::clamp(a->m_camera.fov-static_cast<float>(y)*2.f,30.f,90.f);}
 void Application::key(GLFWwindow*w,int k,int,int action,int){auto*a=static_cast<Application*>(glfwGetWindowUserPointer(w));if(action!=GLFW_PRESS)return;if(k==GLFW_KEY_ESCAPE){a->m_captured=!a->m_captured;a->m_firstMouse=true;glfwSetInputMode(w,GLFW_CURSOR,a->m_captured?GLFW_CURSOR_DISABLED:GLFW_CURSOR_NORMAL);}if(k==GLFW_KEY_F)a->m_flying=!a->m_flying;}
-void Application::mouseButton(GLFWwindow*w,int button,int action,int){auto*a=static_cast<Application*>(glfwGetWindowUserPointer(w));if(action!=GLFW_PRESS||!a->m_captured||a->m_clickCooldown>0)return;auto hit=Raycaster::cast(a->m_world,a->m_camera.position,a->m_camera.front());if(!hit.hit)return;if(button==GLFW_MOUSE_BUTTON_LEFT&&hit.block.y>0)a->m_world.setBlock(hit.block.x,hit.block.y,hit.block.z,BlockType::AIR);if(button==GLFW_MOUSE_BUTTON_RIGHT)a->m_world.setBlock(hit.adjacent.x,hit.adjacent.y,hit.adjacent.z,BlockType::DIRT);a->m_clickCooldown=.12f;}
+void Application::mouseButton(GLFWwindow*w,int button,int action,int){auto*a=static_cast<Application*>(glfwGetWindowUserPointer(w));if(action!=GLFW_PRESS||!a->m_captured||a->m_clickCooldown>0)return;auto hit=Raycaster::cast(a->m_world,a->m_camera.position,a->m_camera.front());if(!hit.hit)return;if(button==GLFW_MOUSE_BUTTON_LEFT&&hit.block.y>0)a->m_world.setBlock(hit.block.x,hit.block.y,hit.block.z,BlockType::AIR);if(button==GLFW_MOUSE_BUTTON_RIGHT&&!a->blockOverlapsPlayer(hit.adjacent))a->m_world.setBlock(hit.adjacent.x,hit.adjacent.y,hit.adjacent.z,BlockType::DIRT);a->m_clickCooldown=.12f;}
+bool Application::blockOverlapsPlayer(const glm::ivec3& b)const{const glm::vec3 half{.3f,.9f,.3f};glm::vec3 playerMin=m_camera.position-half,playerMax=m_camera.position+half;glm::vec3 blockMin=b,blockMax=glm::vec3(b)+glm::vec3(1);return playerMin.x<blockMax.x&&playerMax.x>blockMin.x&&playerMin.y<blockMax.y&&playerMax.y>blockMin.y&&playerMin.z<blockMax.z&&playerMax.z>blockMin.z;}
 void Application::moveWithCollision(glm::vec3 d){
   if(m_flying){m_camera.position+=d;return;}const glm::vec3 half{.3f,.9f,.3f};
   for(int axis=0;axis<3;++axis){glm::vec3 candidate=m_camera.position;candidate[axis]+=d[axis];bool blocked=false;glm::vec3 lo=candidate-half,hi=candidate+half;
@@ -32,4 +35,7 @@ void Application::input(float dt){glm::vec3 f=m_camera.front();f.y=0;if(glm::len
   if(glfwGetKey(m_window,GLFW_KEY_A)==GLFW_PRESS)d-=r*speed;
   if(m_flying){if(glfwGetKey(m_window,GLFW_KEY_SPACE)==GLFW_PRESS)d.y+=speed;if(glfwGetKey(m_window,GLFW_KEY_LEFT_SHIFT)==GLFW_PRESS)d.y-=speed;}moveWithCollision(d);m_camera.position.x=std::clamp(m_camera.position.x,.31f,999.69f);m_camera.position.z=std::clamp(m_camera.position.z,.31f,999.69f);}
 void Application::run(){double last=glfwGetTime();while(!glfwWindowShouldClose(m_window)){double now=glfwGetTime();float dt=std::min(static_cast<float>(now-last),.05f);last=now;m_clickCooldown=std::max(0.f,m_clickCooldown-dt);glfwPollEvents();input(dt);m_world.update(m_camera.position);
-    int width,height;glfwGetFramebufferSize(m_window,&width,&height);glViewport(0,0,width,height);glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);glm::mat4 projection=glm::perspective(glm::radians(m_camera.fov),width/static_cast<float>(std::max(height,1)),.1f,500.f);m_renderer->draw(m_world,m_camera.view(),projection);glfwSwapBuffers(m_window);}}
+    int width,height;glfwGetFramebufferSize(m_window,&width,&height);glViewport(0,0,width,height);glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);glm::mat4 projection=glm::perspective(glm::radians(m_camera.fov),width/static_cast<float>(std::max(height,1)),.1f,500.f);
+    RayHit target=Raycaster::cast(m_world,m_camera.position,m_camera.front());BlockType selected=target.hit?m_world.getBlock(target.block.x,target.block.y,target.block.z):BlockType::AIR;const char* name=selected==BlockType::GRASS?"GRASS":selected==BlockType::DIRT?"DIRT":selected==BlockType::BEDROCK?"BEDROCK":"NONE";
+    std::ostringstream hud;hud<<std::fixed<<std::setprecision(1)<<"POS: "<<m_camera.position.x<<" "<<m_camera.position.y<<" "<<m_camera.position.z<<"\nFLY: "<<(m_flying?"ON":"OFF")<<"\nTARGET: "<<name;
+    m_renderer->draw(m_world,m_camera.view(),projection,m_camera.position,target,width,height,hud.str());glfwSwapBuffers(m_window);}}
