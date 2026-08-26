@@ -20,6 +20,7 @@ Run `Minecraft` from the build output directory.
 - **Left click** breaks a block
 - **Right click** places dirt on the selected face
 - **F** toggles flying, **Escape** releases/captures the mouse
+- **Space** jumps while grounded; **F5** switches first/third person
 
 The texture atlas is generated in memory, so no external asset files are required.
 
