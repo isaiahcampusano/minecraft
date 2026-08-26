@@ -10,6 +10,6 @@ public:PlayerRenderer();~PlayerRenderer();void draw(const Player&,float dt,const
 private:
   Shader m_shader;PlayerAnimator m_animator;
   std::unique_ptr<CuboidMesh> m_head,m_torso,m_arm,m_leg,m_eye,m_mouth;
+  float m_bodyYaw=0;bool m_hasBodyYaw=false;
   void drawPart(const CuboidMesh&,const glm::mat4&);
 };
-

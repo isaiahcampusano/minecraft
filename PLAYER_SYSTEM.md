@@ -23,4 +23,4 @@ The player is a physical entity whose position is measured at its feet. It has a
 
 Gravity, landing, jumping, falling into holes, collision sliding, flight, and player-safe block placement all operate on the same player AABB.
 
-The third-person model uses shoulder, hip, and neck pivots. Walking and sprinting swing opposing limbs, idle motion settles smoothly, and jumping, falling, and flying use distinct poses. Facial details are offset slightly from the head surface to avoid z-fighting.
+The third-person model uses shoulder, hip, and neck pivots. Walking and sprinting swing opposing limbs, idle motion settles smoothly, and jumping, falling, and flying use distinct poses. The body smoothly faces movement while the constrained head tracks camera yaw and pitch. Facial details are offset slightly from the head surface to avoid z-fighting.

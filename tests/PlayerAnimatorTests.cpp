@@ -19,5 +19,7 @@ int main(){
   player.isFlying=true;tick(animator,player,.5f);if(animator.pose().torsoLean<.5f)return fail("Flying pose did not lean the torso");
   player.isFlying=false;player.onGround=true;player.velocity=glm::vec3(0);tick(animator,player,1.f);auto idle=animator.pose();
   if(std::abs(idle.leftArm)>.02f||std::abs(idle.rightLeg)>.02f)return fail("Limbs did not smoothly return to idle");
+  player.yaw=0;for(int i=0;i<60;++i)animator.update(player,1.f/60.f,0);if(std::abs(animator.pose().headYaw)<1.f)return fail("Head did not track horizontal camera yaw");
+  player.yaw=90;for(int i=0;i<60;++i)animator.update(player,1.f/60.f,0);if(std::abs(animator.pose().headYaw)>1.401f)return fail("Head yaw exceeded its natural limit");
   return 0;
 }
