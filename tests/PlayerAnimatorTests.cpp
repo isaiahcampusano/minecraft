@@ -8,6 +8,7 @@ int main(){
   Player player;PlayerAnimator animator;player.onGround=true;player.velocity={5.f,0,0};tick(animator,player,.25f);auto walk=animator.pose();
   if(walk.leftArm*walk.rightArm>=0||walk.leftLeg*walk.rightLeg>=0)return fail("Walking limbs are not opposing");
   if(walk.leftArm*walk.leftLeg>=0)return fail("Same-side arm and leg should oppose each other");
+  if(std::abs(walk.torsoSway)<.005f||std::abs(walk.leftArmOut)<.03f)return fail("Walking pose has no visible silhouette motion");
 
   player.velocity={0,8.f,0};player.onGround=false;tick(animator,player,.5f);auto jump=animator.pose();
   if(jump.leftArm>-.9f||jump.rightArm>-.9f)return fail("Jump pose did not raise both arms");

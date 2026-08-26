@@ -28,7 +28,7 @@ void PlayerRenderer::drawPart(const CuboidMesh& mesh,const glm::mat4& model){m_s
 void PlayerRenderer::draw(const Player&p,float dt,const glm::mat4&view,const glm::mat4&projection,const glm::vec3&camera){
   m_animator.update(p,dt);const PlayerPose&a=m_animator.pose();m_shader.use();m_shader.setMat4("view",view);m_shader.setMat4("projection",projection);m_shader.setVec3("lightDir",glm::normalize(glm::vec3{.55f,1.f,.35f}));m_shader.setVec3("viewPos",camera);m_shader.setVec3("fogColor",{.70f,.86f,.96f});
   glm::mat4 base=glm::translate(glm::mat4(1),p.position)*glm::rotate(glm::mat4(1),glm::radians(-p.yaw-90.f),{0,1,0});
-  glm::mat4 body=base*glm::translate(glm::mat4(1),{0,.65f+a.torsoBob,0})*glm::rotate(glm::mat4(1),a.torsoLean,{1,0,0})*glm::translate(glm::mat4(1),{0,-.65f,0});
+  glm::mat4 body=base*glm::translate(glm::mat4(1),{0,.65f+a.torsoBob,0})*glm::rotate(glm::mat4(1),a.torsoSway,{0,0,1})*glm::rotate(glm::mat4(1),a.torsoLean,{1,0,0})*glm::translate(glm::mat4(1),{0,-.65f,0});
   drawPart(*m_torso,body*glm::translate(glm::mat4(1),{0,.975f,0}));
   glm::mat4 headJoint=body*glm::translate(glm::mat4(1),{0,1.3f,0})*glm::rotate(glm::mat4(1),a.headPitch,{1,0,0});
   drawPart(*m_head,headJoint*glm::translate(glm::mat4(1),{0,.25f,0}));
