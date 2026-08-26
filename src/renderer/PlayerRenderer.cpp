@@ -1,14 +1,38 @@
 #include "PlayerRenderer.h"
+#include "CuboidMesh.h"
 #include "../player/Player.h"
 #include <glm/gtc/matrix_transform.hpp>
-#include <vector>
+#include <array>
+
 namespace{
 const char* VS=R"(#version 330 core
-layout(location=0)in vec3 p;layout(location=1)in vec3 c;out vec3 color;uniform mat4 projection,view,model;void main(){color=c;gl_Position=projection*view*model*vec4(p,1);})";
+layout(location=0)in vec3 p;layout(location=1)in vec3 normal;layout(location=2)in vec3 color;
+out vec3 vNormal;out vec3 vColor;out vec3 vWorld;uniform mat4 projection,view,model;
+void main(){vec4 world=model*vec4(p,1);vWorld=world.xyz;vNormal=mat3(transpose(inverse(model)))*normal;vColor=color;gl_Position=projection*view*world;})";
 const char* FS=R"(#version 330 core
-in vec3 color;out vec4 outColor;void main(){outColor=vec4(color,1);})";
-void cube(std::vector<float>&v,glm::vec3 lo,glm::vec3 hi,glm::vec3 c){const int faces[6][4]={{1,5,6,2},{0,3,7,4},{4,5,6,7},{0,1,2,3},{2,6,7,3},{0,4,5,1}};glm::vec3 p[8]={{lo.x,lo.y,lo.z},{hi.x,lo.y,lo.z},{hi.x,lo.y,hi.z},{lo.x,lo.y,hi.z},{lo.x,hi.y,lo.z},{hi.x,hi.y,lo.z},{hi.x,hi.y,hi.z},{lo.x,hi.y,hi.z}};const int tri[6]={0,1,2,0,2,3};for(auto&f:faces)for(int n:tri){auto q=p[f[n]];v.insert(v.end(),{q.x,q.y,q.z,c.r,c.g,c.b});}}
+in vec3 vNormal;in vec3 vColor;in vec3 vWorld;out vec4 outColor;uniform vec3 lightDir,viewPos,fogColor;
+void main(){vec3 n=normalize(vNormal);float diffuse=max(dot(n,normalize(lightDir)),0.0);float rim=pow(1.0-max(dot(n,normalize(viewPos-vWorld)),0.0),3.0)*.08;vec3 lit=vColor*(.38+diffuse*.68+rim);float d=length(viewPos-vWorld);float fog=clamp(1.0-exp(-.00055*d*d),0.0,.9);outColor=vec4(mix(lit,fogColor,fog),1);})";
+std::array<glm::vec3,6> shades(glm::vec3 base){return{base*.82f,base*.7f,glm::min(base*1.16f,glm::vec3(1)),base*.52f,base*.94f,base*.64f};}
 }
-PlayerRenderer::PlayerRenderer():m_shader(VS,FS){std::vector<float>v;cube(v,{-.25f,1.3f,-.25f},{.25f,1.8f,.25f},{.76f,.55f,.38f});cube(v,{-.25f,.65f,-.15f},{.25f,1.3f,.15f},{.1f,.55f,.68f});cube(v,{-.42f,.65f,-.12f},{-.25f,1.28f,.12f},{.76f,.55f,.38f});cube(v,{.25f,.65f,-.12f},{.42f,1.28f,.12f},{.76f,.55f,.38f});cube(v,{-.23f,0,-.14f},{-.02f,.65f,.14f},{.15f,.22f,.58f});cube(v,{.02f,0,-.14f},{.23f,.65f,.14f},{.15f,.22f,.58f});m_count=static_cast<GLsizei>(v.size()/6);glGenVertexArrays(1,&m_vao);glGenBuffers(1,&m_vbo);glBindVertexArray(m_vao);glBindBuffer(GL_ARRAY_BUFFER,m_vbo);glBufferData(GL_ARRAY_BUFFER,static_cast<GLsizeiptr>(v.size()*sizeof(float)),v.data(),GL_STATIC_DRAW);glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,6*sizeof(float),nullptr);glEnableVertexAttribArray(0);glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,6*sizeof(float),reinterpret_cast<void*>(3*sizeof(float)));glEnableVertexAttribArray(1);glBindVertexArray(0);}
-PlayerRenderer::~PlayerRenderer(){if(m_vbo)glDeleteBuffers(1,&m_vbo);if(m_vao)glDeleteVertexArrays(1,&m_vao);}
-void PlayerRenderer::draw(const Player&p,const glm::mat4&v,const glm::mat4&projection){m_shader.use();m_shader.setMat4("view",v);m_shader.setMat4("projection",projection);glm::mat4 model=glm::translate(glm::mat4(1),p.position)*glm::rotate(glm::mat4(1),glm::radians(-p.yaw-90.f),glm::vec3{0,1,0});m_shader.setMat4("model",model);glBindVertexArray(m_vao);glDrawArrays(GL_TRIANGLES,0,m_count);}
+
+PlayerRenderer::PlayerRenderer():m_shader(VS,FS){
+  m_head=std::make_unique<CuboidMesh>(glm::vec3{.5f,.5f,.5f},shades({.78f,.56f,.4f}));
+  m_torso=std::make_unique<CuboidMesh>(glm::vec3{.5f,.65f,.3f},shades({.08f,.55f,.68f}));
+  m_arm=std::make_unique<CuboidMesh>(glm::vec3{.22f,.65f,.22f},shades({.78f,.56f,.4f}));
+  m_leg=std::make_unique<CuboidMesh>(glm::vec3{.23f,.65f,.24f},shades({.12f,.2f,.55f}));
+  m_eye=std::make_unique<CuboidMesh>(glm::vec3{.085f,.07f,.018f},shades({.04f,.05f,.06f}));
+  m_mouth=std::make_unique<CuboidMesh>(glm::vec3{.17f,.04f,.018f},shades({.28f,.08f,.06f}));
+}
+PlayerRenderer::~PlayerRenderer()=default;
+void PlayerRenderer::drawPart(const CuboidMesh& mesh,const glm::mat4& model){m_shader.setMat4("model",model);mesh.draw();}
+void PlayerRenderer::draw(const Player&p,float dt,const glm::mat4&view,const glm::mat4&projection,const glm::vec3&camera){
+  m_animator.update(p,dt);const PlayerPose&a=m_animator.pose();m_shader.use();m_shader.setMat4("view",view);m_shader.setMat4("projection",projection);m_shader.setVec3("lightDir",glm::normalize(glm::vec3{.55f,1.f,.35f}));m_shader.setVec3("viewPos",camera);m_shader.setVec3("fogColor",{.70f,.86f,.96f});
+  glm::mat4 base=glm::translate(glm::mat4(1),p.position)*glm::rotate(glm::mat4(1),glm::radians(-p.yaw-90.f),{0,1,0});
+  glm::mat4 body=base*glm::translate(glm::mat4(1),{0,.65f+a.torsoBob,0})*glm::rotate(glm::mat4(1),a.torsoLean,{1,0,0})*glm::translate(glm::mat4(1),{0,-.65f,0});
+  drawPart(*m_torso,body*glm::translate(glm::mat4(1),{0,.975f,0}));
+  glm::mat4 headJoint=body*glm::translate(glm::mat4(1),{0,1.3f,0})*glm::rotate(glm::mat4(1),a.headPitch,{1,0,0});
+  drawPart(*m_head,headJoint*glm::translate(glm::mat4(1),{0,.25f,0}));
+  drawPart(*m_eye,headJoint*glm::translate(glm::mat4(1),{-.12f,.31f,-.261f}));drawPart(*m_eye,headJoint*glm::translate(glm::mat4(1),{.12f,.31f,-.261f}));drawPart(*m_mouth,headJoint*glm::translate(glm::mat4(1),{0,.18f,-.261f}));
+  auto limb=[&](float x,float y,float angle,float outward,const CuboidMesh&mesh){glm::mat4 joint=body*glm::translate(glm::mat4(1),{x,y,0})*glm::rotate(glm::mat4(1),outward,{0,0,1})*glm::rotate(glm::mat4(1),angle,{1,0,0});drawPart(mesh,joint*glm::translate(glm::mat4(1),{0,-.325f,0}));};
+  limb(-.36f,1.29f,a.leftArm,a.leftArmOut,*m_arm);limb(.36f,1.29f,a.rightArm,a.rightArmOut,*m_arm);limb(-.12f,.65f,a.leftLeg,0,*m_leg);limb(.12f,.65f,a.rightLeg,0,*m_leg);
+}

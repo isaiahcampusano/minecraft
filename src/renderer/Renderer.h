@@ -12,7 +12,7 @@ struct RayHit;
 class Renderer {
 public:
   Renderer(); ~Renderer();
-  void draw(const World&,const Player&,bool showPlayer,const glm::mat4&,const glm::mat4&,const glm::vec3& camera,const RayHit&,int width,int height,const std::string& hud);
+  void draw(const World&,const Player&,bool showPlayer,float deltaTime,const glm::mat4&,const glm::mat4&,const glm::vec3& camera,const RayHit&,int width,int height,const std::string& hud);
 private:
   Shader m_shader,m_colorShader,m_skyShader; Texture m_texture;
   GLuint m_lineVao=0,m_lineVbo=0,m_skyVao=0,m_skyVbo=0;
