@@ -46,3 +46,14 @@ The v1.5 inventory, world-variety, and persistence pass adds:
 - A sparse in-memory edit overlay that preserves placed and broken blocks across chunk unload/reload cycles.
 
 Cobblestone and glass remain creative-only because neither occurs naturally in this flat terrain. Stone and cobblestone now share the same hardness because they represent the same base material. The overlay and inventory remain session-only; saving them across application restarts is outside v1.5.
+
+## v1.6
+
+The v1.6 full-tree pass adds:
+
+- A registered `LEAVES` block with an oak-green procedural texture, 0.2-second hardness, hotbar support, and automatic creative-palette availability.
+- Deterministic oak trees with 4–6-block trunks and classic three-layer balloon canopies: a 5×5 lower layer, 3×3 middle layer, and single top leaf.
+- Chunk-boundary-aware generation, so canopies continue into neighboring chunks rather than being clipped at their edges.
+- Trunk-dominant collision semantics for overlapping trees: logs remain intact wherever another canopy would place a leaf.
+
+Trees retain the sparse v1.5 placement threshold and do not alter the seven-block superflat terrain stack. Leaf decay, saplings, growth, drops, biome tinting, and alternate tree shapes remain out of scope.

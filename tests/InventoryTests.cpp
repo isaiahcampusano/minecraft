@@ -33,9 +33,9 @@ int main() {
   for(BlockType type:allPlaceableBlocks()){auto index=static_cast<std::size_t>(type);if(type==BlockType::AIR||index>=seen.size()||seen[index])return fail("creative block range is invalid");seen[index]=true;++creativeCount;}
   if(creativeCount!=BLOCK_TYPE_COUNT-1)return fail("creative range does not cover every non-air block");
   Inventory creative;
-  if(!creative.giveCreative(BlockType::SAND)||creative.cursorStack().count!=Inventory::CREATIVE_STACK_SIZE)return fail("creative give did not create a full cursor stack");
+  if(!creative.giveCreative(BlockType::LEAVES)||creative.cursorStack().type!=BlockType::LEAVES||creative.cursorStack().count!=Inventory::CREATIVE_STACK_SIZE)return fail("creative give did not create a full LEAVES stack");
   creative.swapBackpack(0);
-  if(!creative.giveCreative(BlockType::SAND)||creative.cursorStack().count!=Inventory::CREATIVE_STACK_SIZE||creative.backpackSlot(0).count!=Inventory::CREATIVE_STACK_SIZE)return fail("creative source was depleted");
+  if(!creative.giveCreative(BlockType::LEAVES)||creative.cursorStack().count!=Inventory::CREATIVE_STACK_SIZE||creative.backpackSlot(0).type!=BlockType::LEAVES||creative.backpackSlot(0).count!=Inventory::CREATIVE_STACK_SIZE)return fail("creative source was depleted");
 
   inventory.select(-10); if (inventory.selectedSlot() != 0) return fail("negative selection was not clamped");
   inventory.select(99); if (inventory.selectedSlot() != Inventory::HOTBAR_SLOTS - 1) return fail("high selection was not clamped");

@@ -12,7 +12,8 @@ constexpr std::array<BlockProperties,BLOCK_TYPE_COUNT> PROPERTIES={{
   {2.f,true},    // OAK_LOG
   {.6f,true},    // SAND
   {.2f,true},    // GRAVEL
-  {.6f,true}     // GLASS
+  {.6f,true},    // GLASS
+  {.2f,true}     // LEAVES
 }};
 constexpr BlockProperties INVALID{0.f,false};
 }

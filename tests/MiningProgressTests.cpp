@@ -14,6 +14,9 @@ int main(){
   if(player.blockBreakProgress!=0.f)return fail("Changing target did not reset progress");
   if(player.advanceMining(BlockType::GRAVEL,.1f)||!near(player.blockBreakProgress,.5f))return fail("Gravel progress rate was incorrect");
   if(!player.advanceMining(BlockType::GRAVEL,.1f)||!near(player.blockBreakProgress,1.f))return fail("Mining did not complete and stop at one");
+  player.setMiningTarget({3,2,3});
+  if(player.advanceMining(BlockType::LEAVES,.1f)||!near(player.blockBreakProgress,.5f))return fail("Leaves did not use 0.2-second hardness");
+  if(!player.advanceMining(BlockType::LEAVES,.1f)||!near(player.blockBreakProgress,1.f))return fail("Leaves did not finish breaking in 0.2 seconds");
   player.resetMiningProgress();
   if(player.blockBreakProgress!=0.f)return fail("Released mining progress did not reset");
   if(player.advanceMining(BlockType::BEDROCK,100.f)||player.blockBreakProgress!=0.f)return fail("Bedrock mining advanced");

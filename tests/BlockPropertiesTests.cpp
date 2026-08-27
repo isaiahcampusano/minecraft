@@ -8,7 +8,7 @@ int main(){
   const struct { BlockType type; float hardness; } expected[]={
     {BlockType::GRASS,1.2f},{BlockType::DIRT,.5f},{BlockType::STONE,4.f},
     {BlockType::COBBLESTONE,4.f},{BlockType::OAK_LOG,2.f},{BlockType::SAND,.6f},
-    {BlockType::GRAVEL,.2f},{BlockType::GLASS,.6f}
+    {BlockType::GRAVEL,.2f},{BlockType::GLASS,.6f},{BlockType::LEAVES,.2f}
   };
   if(getBlockProperties(BlockType::AIR).diggable)return fail("Air was diggable");
   const auto& bedrock=getBlockProperties(BlockType::BEDROCK);

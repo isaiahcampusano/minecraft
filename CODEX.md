@@ -2,7 +2,7 @@
 
 ## Goal
 
-Build a finite 1000×1000 Minecraft-style superflat world in C++17 and OpenGL. The base terrain stack is seven blocks high: Bedrock at y=0, Stone at y=1–2, Dirt at y=3–5, and a Grass, Sand, or Gravel surface at y=6, with sparse bare Oak Log trunks.
+Build a finite 1000×1000 Minecraft-style superflat world in C++17 and OpenGL. The base terrain stack is seven blocks high: Bedrock at y=0, Stone at y=1–2, Dirt at y=3–5, and a Grass, Sand, or Gravel surface at y=6, with sparse full oak trees above grass.
 
 ## Architecture
 

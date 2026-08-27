@@ -1,6 +1,6 @@
 # Minecraft Superflat
 
-A small Minecraft-style voxel demo in C++17 and OpenGL 3.3. It streams 16×256×16 chunks over a finite 1000×1000 world, generates a varied Bedrock + Stone + Dirt superflat stack, meshes visible faces, and supports first-person movement, collision, inventory management, and persistent in-session block editing.
+A small Minecraft-style voxel demo in C++17 and OpenGL 3.3. It streams 16×256×16 chunks over a finite 1000×1000 world, generates a varied Bedrock + Stone + Dirt superflat stack with full oak trees, meshes visible faces, and supports first-person movement, collision, inventory management, and persistent in-session block editing.
 
 ## Build
 
@@ -26,4 +26,4 @@ Run `Minecraft` from the build output directory.
 
 The texture atlas is generated in memory, so no external asset files are required.
 
-The HUD shows your coordinates, flying state, targeted block, time of day, and nine-slot hotbar. Pressing **E** opens a 27-slot backpack and an inexhaustible palette of every placeable block; movement, mining, and placement pause while it is open. Broken blocks fill the hotbar first and then overflow into the backpack. Block edits survive chunk unload/reload cycles for the lifetime of the process. A procedural 12-minute day-night cycle changes the sky and fog while dimming terrain and the player together; propagated skylight also darkens holes, overhangs, and covered blocks.
+The HUD shows your coordinates, flying state, targeted block, time of day, and nine-slot hotbar. Pressing **E** opens a 27-slot backpack and an inexhaustible palette of every placeable block, including oak-green leaves; movement, mining, and placement pause while it is open. The deterministic flat world includes sparse 4–6-block oak trunks with full leaf canopies that continue across chunk boundaries. Broken blocks fill the hotbar first and then overflow into the backpack. Block edits survive chunk unload/reload cycles for the lifetime of the process. A procedural 12-minute day-night cycle changes the sky and fog while dimming terrain and the player together; propagated skylight also darkens holes, overhangs, and covered blocks.
