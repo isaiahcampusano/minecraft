@@ -34,3 +34,15 @@ The v1.4 block-variety and mining pass adds:
 - Expanded procedural atlas and hotbar swatches for all ten block values.
 
 Mining progress resets when the mouse is released or the targeted block changes. The system remains tool-free for now and introduces no external assets or dependencies.
+
+## v1.5
+
+The v1.5 inventory, world-variety, and persistence pass adds:
+
+- A 27-slot backpack behind the existing nine-slot hotbar, with 64-block stack limits and click-to-swap interaction.
+- An always-available, paged creative palette sourced from the central block registry, so every non-air block is obtainable without maintaining a second hardcoded list.
+- A single source of truth for block count, names, colors, atlas sizing, and palette iteration.
+- A deeper flat-world stack with diggable stone below dirt, deterministic sand and gravel surface patches, and sparse bare oak trunks.
+- A sparse in-memory edit overlay that preserves placed and broken blocks across chunk unload/reload cycles.
+
+Cobblestone and glass remain creative-only because neither occurs naturally in this flat terrain. Stone and cobblestone now share the same hardness because they represent the same base material. The overlay and inventory remain session-only; saving them across application restarts is outside v1.5.

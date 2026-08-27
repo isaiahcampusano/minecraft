@@ -2,13 +2,13 @@
 #include <array>
 
 namespace {
-constexpr std::array<BlockProperties,10> PROPERTIES={{
+constexpr std::array<BlockProperties,BLOCK_TYPE_COUNT> PROPERTIES={{
   {0.f,false},   // AIR
   {1.2f,true},   // GRASS
   {.5f,true},    // DIRT
   {-1.f,false},  // BEDROCK
   {4.f,true},    // STONE
-  {10.f,true},   // COBBLESTONE
+  {4.f,true},    // COBBLESTONE: stone and cobblestone share material hardness.
   {2.f,true},    // OAK_LOG
   {.6f,true},    // SAND
   {.2f,true},    // GRAVEL

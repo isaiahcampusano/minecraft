@@ -4,6 +4,8 @@
 #include "PlayerRenderer.h"
 #include "../player/Player.h"
 #include "../player/Inventory.h"
+#include "../player/InventoryLayout.h"
+#include "../world/BlockRegistry.h"
 #include "../core/DayNightCycle.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <array>
@@ -31,10 +33,10 @@ std::array<unsigned char,7> glyph(char c){
   switch(c){
     case 'A':return{14,17,17,31,17,17,17};case 'B':return{30,17,17,30,17,17,30};case 'C':return{14,17,16,16,16,17,14};
     case 'D':return{30,17,17,17,17,17,30};case 'E':return{31,16,16,30,16,16,31};case 'F':return{31,16,16,30,16,16,16};
-    case 'G':return{14,17,16,23,17,17,14};case 'I':return{14,4,4,4,4,4,14};case 'K':return{17,18,20,24,20,18,17};
+    case 'G':return{14,17,16,23,17,17,14};case 'H':return{17,17,17,31,17,17,17};case 'I':return{14,4,4,4,4,4,14};case 'K':return{17,18,20,24,20,18,17};
     case 'L':return{16,16,16,16,16,16,31};case 'N':return{17,25,21,19,17,17,17};case 'O':return{14,17,17,17,17,17,14};
     case 'P':return{30,17,17,30,16,16,16};case 'R':return{30,17,17,30,20,18,17};case 'S':return{15,16,16,14,1,1,30};
-    case 'T':return{31,4,4,4,4,4,4};case 'Y':return{17,17,10,4,4,4,4};case '0':return{14,17,19,21,25,17,14};
+    case 'T':return{31,4,4,4,4,4,4};case 'V':return{17,17,17,17,17,10,4};case 'Y':return{17,17,10,4,4,4,4};case '0':return{14,17,19,21,25,17,14};
     case '1':return{4,12,4,4,4,4,14};case '2':return{14,17,1,2,4,8,31};case '3':return{30,1,1,14,1,1,30};
     case '4':return{2,6,10,18,31,2,2};case '5':return{31,16,16,30,1,1,30};case '6':return{14,16,16,30,17,17,14};
     case '7':return{31,1,2,4,8,8,8};case '8':return{14,17,17,14,17,17,14};case '9':return{14,17,17,15,1,1,14};
@@ -56,23 +58,27 @@ void Renderer::drawOutline(const RayHit& hit,const glm::mat4& view,const glm::ma
   glBindBuffer(GL_ARRAY_BUFFER,m_lineVbo);glBufferData(GL_ARRAY_BUFFER,sizeof(p),p,GL_DYNAMIC_DRAW);m_colorShader.use();m_colorShader.setMat4("transform",projection*view);m_colorShader.setVec4("tint",{.05f,.05f,.05f,1});glLineWidth(2.5f);glBindVertexArray(m_lineVao);glDrawArrays(GL_LINES,0,24);
 }
 void Renderer::drawMiningCrack(const glm::ivec3& block,float progress,const glm::mat4& view,const glm::mat4& projection){if(progress<=0.f||block.y<0)return;int stage=std::min(9,static_cast<int>(progress*10.f));float e=.006f,x=block.x-e,y=block.y-e,z=block.z-e,s=1.f+2*e;const float p[]={x,y,z,x+s,y,z,x+s,y,z,x+s,y+s,z,x+s,y+s,z,x,y+s,z,x,y+s,z,x,y,z,x,y,z+s,x+s,y,z+s,x+s,y,z+s,x+s,y+s,z+s,x+s,y+s,z+s,x,y+s,z+s,x,y+s,z+s,x,y,z+s,x,y,z,x,y,z+s,x+s,y,z,x+s,y,z+s,x+s,y+s,z,x+s,y+s,z+s,x,y+s,z,x,y+s,z+s};glBindBuffer(GL_ARRAY_BUFFER,m_lineVbo);glBufferData(GL_ARRAY_BUFFER,sizeof(p),p,GL_DYNAMIC_DRAW);m_colorShader.use();m_colorShader.setMat4("transform",projection*view);m_colorShader.setVec4("tint",{1.f,1.f,1.f,.2f+stage*.08f});glEnable(GL_BLEND);glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);glLineWidth(3.f+stage*.7f);glBindVertexArray(m_lineVao);glDrawArrays(GL_LINES,0,24);glLineWidth(1.f);glDisable(GL_BLEND);}
-void Renderer::drawOverlay(int width,int height,const std::string& text,const Inventory& inventory){
+void Renderer::drawOverlay(int width,int height,const std::string& text,const Inventory& inventory,bool inventoryOpen,int creativePage){
   const glm::mat4 screen=glm::ortho(0.f,static_cast<float>(width),0.f,static_cast<float>(height));
   auto drawQuads=[&](const std::vector<float>& vertices,const glm::vec4& color){if(vertices.empty())return;glBindBuffer(GL_ARRAY_BUFFER,m_lineVbo);glBufferData(GL_ARRAY_BUFFER,static_cast<GLsizeiptr>(vertices.size()*sizeof(float)),vertices.data(),GL_DYNAMIC_DRAW);m_colorShader.use();m_colorShader.setMat4("transform",screen);m_colorShader.setVec4("tint",color);glBindVertexArray(m_lineVao);glDrawArrays(GL_TRIANGLES,0,static_cast<GLsizei>(vertices.size()/3));};
   auto appendQuad=[](std::vector<float>& vertices,float x,float y,float w,float h){float q[]={x,y,0,x+w,y,0,x+w,y+h,0,x,y,0,x+w,y+h,0,x,y+h,0};vertices.insert(vertices.end(),q,q+18);};
-  glDisable(GL_DEPTH_TEST);glDisable(GL_CULL_FACE);
-  std::vector<float> p;auto quad=[&](float x,float y,float w,float h){appendQuad(p,x,y,w,h);};
-  float cx=width*.5f,cy=height*.5f;quad(cx-9,cy-1,18,2);quad(cx-1,cy-9,2,18);
-  float penX=12,penY=height-18;for(char c:text){if(c=='\n'){penX=12;penY-=18;continue;}auto rows=glyph(c);for(int row=0;row<7;++row)for(int col=0;col<5;++col)if(rows[row]&(1<<(4-col)))quad(penX+col*2,penY-row*2,2,2);penX+=12;}
-  drawQuads(p,{.05f,.05f,.05f,.9f});
+  auto drawText=[&](const std::string& value,float x,float y,float pixel,const glm::vec4& color){std::vector<float> pixels;float penX=x,penY=y;for(char c:value){if(c=='\n'){penX=x;penY-=9*pixel;continue;}auto rows=glyph(c);for(int row=0;row<7;++row)for(int col=0;col<5;++col)if(rows[row]&(1<<(4-col)))appendQuad(pixels,penX+col*pixel,penY-row*pixel,pixel,pixel);penX+=6*pixel;}drawQuads(pixels,color);};
+  auto tintFor=[](BlockType type){const BlockColor color=blockColor(type);return glm::vec4{color.r/255.f,color.g/255.f,color.b/255.f,1.f};};
+  auto drawSlot=[&](float x,float y,const ItemStack& stack,bool selected){std::vector<float> border,background;if(selected)appendQuad(border,x-4,y-4,InventoryLayout::SLOT_SIZE+8,InventoryLayout::SLOT_SIZE+8);else appendQuad(border,x-2,y-2,InventoryLayout::SLOT_SIZE+4,InventoryLayout::SLOT_SIZE+4);appendQuad(background,x,y,InventoryLayout::SLOT_SIZE,InventoryLayout::SLOT_SIZE);drawQuads(border,selected?glm::vec4{.95f,.95f,.88f,1.f}:glm::vec4{.38f,.38f,.40f,.95f});drawQuads(background,{.16f,.16f,.18f,.94f});if(stack.count<=0||stack.type==BlockType::AIR)return;std::vector<float> swatch;appendQuad(swatch,x+8,y+8,InventoryLayout::SLOT_SIZE-16,InventoryLayout::SLOT_SIZE-16);drawQuads(swatch,tintFor(stack.type));const std::string count=std::to_string(stack.count);drawText(count,x+InventoryLayout::SLOT_SIZE-4.f-static_cast<float>(count.size())*6.f,y+10.f,1.f,{1,1,1,1});};
 
-  constexpr float slotSize=48.f,gap=4.f,total=Inventory::SLOT_COUNT*slotSize+(Inventory::SLOT_COUNT-1)*gap;
-  const float startX=(width-total)*.5f,slotY=16.f;
-  std::vector<float> borders,selectedBorder,slots;
-  for(int i=0;i<Inventory::SLOT_COUNT;++i){float x=startX+i*(slotSize+gap);if(i==inventory.selectedSlot())appendQuad(selectedBorder,x-4,slotY-4,slotSize+8,slotSize+8);else appendQuad(borders,x-2,slotY-2,slotSize+4,slotSize+4);appendQuad(slots,x,slotY,slotSize,slotSize);}
-  drawQuads(borders,{.38f,.38f,.40f,.95f});drawQuads(selectedBorder,{.95f,.95f,.88f,1.f});drawQuads(slots,{.16f,.16f,.18f,.94f});
-  constexpr float colors[10][3]={{58.f/255,58.f/255,60.f/255},{105.f/255,178.f/255,62.f/255},{126.f/255,78.f/255,43.f/255},{58.f/255,58.f/255,60.f/255},{100.f/255,100.f/255,100.f/255},{150.f/255,150.f/255,150.f/255},{150.f/255,100.f/255,50.f/255},{220.f/255,200.f/255,150.f/255},{140.f/255,140.f/255,140.f/255},{177.f/255,218.f/255,224.f/255}};
-  for(int i=0;i<Inventory::SLOT_COUNT;++i){const auto& stack=inventory.slot(i);if(stack.count<=0||stack.type==BlockType::AIR)continue;float x=startX+i*(slotSize+gap);std::vector<float> swatch;appendQuad(swatch,x+8,slotY+8,slotSize-16,slotSize-16);int colorIndex=static_cast<int>(stack.type);if(colorIndex<0||colorIndex>=10)colorIndex=3;drawQuads(swatch,{colors[colorIndex][0],colors[colorIndex][1],colors[colorIndex][2],1.f});std::string count=std::to_string(stack.count);std::vector<float> digits;float digitX=x+slotSize-4.f-static_cast<float>(count.size())*8.f;for(char c:count){auto rows=glyph(c);for(int row=0;row<7;++row)for(int col=0;col<5;++col)if(rows[row]&(1<<(4-col)))appendQuad(digits,digitX+col,slotY+4+(6-row),1,1);digitX+=8;}drawQuads(digits,{1,1,1,1});}
+  glDisable(GL_DEPTH_TEST);glDisable(GL_CULL_FACE);
+  std::vector<float> hud;float cx=width*.5f,cy=height*.5f;appendQuad(hud,cx-9,cy-1,18,2);appendQuad(hud,cx-1,cy-9,2,18);drawQuads(hud,{.05f,.05f,.05f,.9f});drawText(text,12.f,height-18.f,2.f,{.05f,.05f,.05f,.9f});
+
+  const float startX=InventoryLayout::hotbarX(width);
+  if(inventoryOpen){
+    const float paletteX=InventoryLayout::paletteX(width),panelTop=InventoryLayout::BACKPACK_Y+InventoryLayout::CREATIVE_PAGE_SIZE*(InventoryLayout::PALETTE_HEIGHT+InventoryLayout::GAP)+20.f;
+    std::vector<float> panel;appendQuad(panel,paletteX-8,InventoryLayout::BACKPACK_Y-10,InventoryLayout::PALETTE_WIDTH+16,panelTop-InventoryLayout::BACKPACK_Y+18);appendQuad(panel,startX-8,InventoryLayout::BACKPACK_Y-10,InventoryLayout::hotbarWidth()+16,3*InventoryLayout::SLOT_SIZE+2*InventoryLayout::GAP+20);drawQuads(panel,{.08f,.08f,.09f,.98f});
+    for(int i=0;i<Inventory::BACKPACK_SLOTS;++i){const int row=i/9,col=i%9;drawSlot(startX+col*(InventoryLayout::SLOT_SIZE+InventoryLayout::GAP),InventoryLayout::BACKPACK_Y+row*(InventoryLayout::SLOT_SIZE+InventoryLayout::GAP),inventory.backpackSlot(i),false);}
+    for(int i=0;i<InventoryLayout::CREATIVE_PAGE_SIZE;++i){const int blockIndex=1+creativePage*InventoryLayout::CREATIVE_PAGE_SIZE+i;if(blockIndex>=static_cast<int>(BLOCK_TYPE_COUNT))break;const BlockType type=static_cast<BlockType>(blockIndex);const float entryY=InventoryLayout::BACKPACK_Y+i*(InventoryLayout::PALETTE_HEIGHT+InventoryLayout::GAP);std::vector<float> edge,entry,swatch;appendQuad(edge,paletteX-2,entryY-2,InventoryLayout::PALETTE_WIDTH+4,InventoryLayout::PALETTE_HEIGHT+4);appendQuad(entry,paletteX,entryY,InventoryLayout::PALETTE_WIDTH,InventoryLayout::PALETTE_HEIGHT);appendQuad(swatch,paletteX+5,entryY+4,24,24);drawQuads(edge,{.38f,.38f,.40f,1.f});drawQuads(entry,{.16f,.16f,.18f,1.f});drawQuads(swatch,tintFor(type));drawText(blockName(type),paletteX+35,entryY+20,1.f,{1,1,1,1});}
+    drawText("BLOCKS",paletteX,panelTop,1.f,{1,1,1,1});drawText("PAGE "+std::to_string(creativePage+1),paletteX+78,panelTop,1.f,{1,1,1,1});
+    const float heldX=startX+InventoryLayout::hotbarWidth()+16.f;drawSlot(heldX,InventoryLayout::BACKPACK_Y,inventory.cursorStack(),false);drawText("HELD",heldX,InventoryLayout::BACKPACK_Y+62.f,1.f,{1,1,1,1});
+  }
+  for(int i=0;i<Inventory::HOTBAR_SLOTS;++i)drawSlot(startX+i*(InventoryLayout::SLOT_SIZE+InventoryLayout::GAP),InventoryLayout::HOTBAR_Y,inventory.hotbarSlot(i),i==inventory.selectedSlot());
   glEnable(GL_CULL_FACE);glEnable(GL_DEPTH_TEST);
 }
-void Renderer::draw(const World&w,const Player&player,bool showPlayer,float dt,const glm::mat4&v,const glm::mat4&p,const glm::vec3&camera,const RayHit&hit,int width,int height,const std::string&hud,const Inventory&inventory,const DayNightCycle&dayNight){drawSky(dayNight);m_shader.use();m_shader.setMat4("view",v);m_shader.setMat4("projection",p);m_shader.setInt("atlas",0);m_shader.setVec3("cameraPos",camera);m_shader.setVec3("fogColor",dayNight.skyBottom());m_shader.setFloat("daylight",dayNight.daylight());m_texture.bind();w.render();if(showPlayer)m_playerRenderer->draw(player,dt,v,p,camera,dayNight);drawOutline(hit,v,p);drawMiningCrack(player.targetedBlock,player.blockBreakProgress,v,p);drawOverlay(width,height,hud,inventory);}
+void Renderer::draw(const World&w,const Player&player,bool showPlayer,float dt,const glm::mat4&v,const glm::mat4&p,const glm::vec3&camera,const RayHit&hit,int width,int height,const std::string&hud,const Inventory&inventory,bool inventoryOpen,int creativePage,const DayNightCycle&dayNight){drawSky(dayNight);m_shader.use();m_shader.setMat4("view",v);m_shader.setMat4("projection",p);m_shader.setInt("atlas",0);m_shader.setVec3("cameraPos",camera);m_shader.setVec3("fogColor",dayNight.skyBottom());m_shader.setFloat("daylight",dayNight.daylight());m_texture.bind();w.render();if(showPlayer)m_playerRenderer->draw(player,dt,v,p,camera,dayNight);drawOutline(hit,v,p);drawMiningCrack(player.targetedBlock,player.blockBreakProgress,v,p);drawOverlay(width,height,hud,inventory,inventoryOpen,creativePage);}

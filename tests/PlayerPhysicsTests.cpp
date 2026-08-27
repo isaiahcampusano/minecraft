@@ -10,17 +10,17 @@ int fail(const char* message){std::cerr<<message<<'\n';return 1;}
 
 int main(){
   World world;
-  world.setBlock(500,4,500,BlockType::GRASS);
+  world.setBlock(500,6,500,BlockType::GRASS);
   Player player({500.5f,8.f,500.5f});
   for(int i=0;i<300;++i)player.update(1.f/60.f,world);
-  if(!player.onGround||!near(player.position.y,5.f))return fail("Player did not land on the grass surface");
+  if(!player.onGround||!near(player.position.y,7.f))return fail("Player did not land on the grass surface");
 
   player.jump();
   player.update(1.f/60.f,world);
-  if(player.position.y<=5.f||player.velocity.y<=0)return fail("Grounded player did not jump");
+  if(player.position.y<=7.f||player.velocity.y<=0)return fail("Grounded player did not jump");
 
-  for(int y=1;y<=4;++y)world.setBlock(500,y,500,BlockType::AIR);
-  player.position={500.5f,5.f,500.5f};player.velocity=glm::vec3(0);player.onGround=false;
+  for(int y=1;y<=6;++y)world.setBlock(500,y,500,BlockType::AIR);
+  player.position={500.5f,7.f,500.5f};player.velocity=glm::vec3(0);player.onGround=false;
   for(int i=0;i<300;++i)player.update(1.f/60.f,world);
   if(!player.onGround||!near(player.position.y,1.f))return fail("Player did not fall through the dug hole onto bedrock");
 

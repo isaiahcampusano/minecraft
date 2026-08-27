@@ -13,7 +13,7 @@ The player is a physical entity whose position is measured at its feet. It has a
 
 ## Inventory
 
-`Inventory` owns a fixed nine-slot hotbar of block item stacks. Breaking a non-bedrock block stacks it into a matching slot or the first empty slot; a full hotbar discards the collected item. Number keys 1–9 select a slot, and placing consumes one block from the selected stack. The hotbar starts empty and is rendered at the bottom center of the HUD with block-color swatches and stack counts.
+`Inventory` owns a nine-slot hotbar, a 27-slot backpack, and the stack held by the inventory cursor. Breaking a non-bedrock block fills matching or empty hotbar stacks first, then overflows into the backpack. Stacks hold up to 64 blocks. Number keys 1–9 select the active hotbar slot, and placing consumes one block from that stack. The hotbar remains visible at the bottom center of the HUD.
 
 ## Controls
 
@@ -24,7 +24,14 @@ The player is a physical entity whose position is measured at its feet. It has a
 - **F:** toggle flight
 - **F5:** switch first/third person
 - **Mouse:** look/orbit
+- **E:** open/close inventory
 
 Gravity, landing, jumping, falling into holes, collision sliding, flight, and player-safe block placement all operate on the same player AABB.
 
 The third-person model uses shoulder, hip, and neck pivots. Walking and sprinting swing opposing limbs, idle motion settles smoothly, and jumping, falling, and flying use distinct poses. The body smoothly faces movement while the constrained head tracks camera yaw and pitch. Facial details are offset slightly from the head surface to avoid z-fighting.
+
+## v1.5
+
+The inventory screen releases the cursor and suspends movement, mining, and placement while open. Its procedural UI shows the three-row backpack above the hotbar and a paged creative palette containing every non-air block registered by `BlockType`. Left-clicking a storage slot swaps it with the held cursor stack; clicking a palette entry creates a fresh 64-block stack without depleting the palette.
+
+World edits are recorded in a sparse in-memory overlay and re-applied after streamed chunks regenerate, so placed and broken blocks survive any number of unload/reload cycles during the current run.
