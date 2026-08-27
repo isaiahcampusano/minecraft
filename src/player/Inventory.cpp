@@ -31,3 +31,7 @@ void Inventory::select(int slot) { m_selected = std::clamp(slot, 0, HOTBAR_SLOTS
 void Inventory::swapHotbar(int i){if(i>=0&&i<HOTBAR_SLOTS)std::swap(m_hotbar[i],m_cursorStack);}
 void Inventory::swapBackpack(int i){if(i>=0&&i<BACKPACK_SLOTS)std::swap(m_backpack[i],m_cursorStack);}
 bool Inventory::giveCreative(BlockType type){if(type==BlockType::AIR||type==BlockType::COUNT)return false;m_cursorStack={type,CREATIVE_STACK_SIZE};return true;}
+ItemStack Inventory::normalized(const ItemStack& stack){const auto type=static_cast<std::size_t>(stack.type);if(type>=BLOCK_TYPE_COUNT||stack.type==BlockType::AIR||stack.count<=0)return{};return{stack.type,std::min(stack.count,MAX_STACK_SIZE)};}
+void Inventory::setCursorStack(const ItemStack& stack){m_cursorStack=normalized(stack);}
+void Inventory::setHotbarSlot(int i,const ItemStack& stack){if(i>=0&&i<HOTBAR_SLOTS)m_hotbar[i]=normalized(stack);}
+void Inventory::setBackpackSlot(int i,const ItemStack& stack){if(i>=0&&i<BACKPACK_SLOTS)m_backpack[i]=normalized(stack);}

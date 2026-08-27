@@ -57,3 +57,15 @@ The v1.6 full-tree pass adds:
 - Trunk-dominant collision semantics for overlapping trees: logs remain intact wherever another canopy would place a leaf.
 
 Trees retain the sparse v1.5 placement threshold and do not alter the seven-block superflat terrain stack. Leaf decay, saplings, growth, drops, biome tinting, and alternate tree shapes remain out of scope.
+
+## v1.7
+
+The v1.7 disk-persistence pass adds:
+
+- A compact, versioned binary save format identified by the `MCv1` magic header and format version 1.
+- Save-on-exit and load-on-startup for the selected slot, cursor stack, nine-slot hotbar, 27-slot backpack, and sparse world-edit overlay.
+- Lazy restoration of edits on top of deterministic terrain whenever an affected chunk loads, including distant chunks.
+- Strict validation of block types, stack sizes, coordinates, file length, and edit counts; missing or corrupted saves are ignored without changing the fresh game state.
+- Round-trip coverage for a full inventory and 1,000 edits, plus integration coverage for placed blocks, broken blocks, and distant chunk edits.
+
+The game uses one local save at `%APPDATA%\MinecraftClone\save.dat` on Windows or `~/.minecraftclone/save.dat` on Linux and macOS. The base terrain is regenerated and only player edits are stored. Multiple save slots, compression, encryption, cloud saves, corruption recovery, and auto-save remain out of scope.

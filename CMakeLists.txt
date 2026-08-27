@@ -17,7 +17,7 @@ glad_add_library(glad_gl_core_33 REPRODUCIBLE API gl:core=3.3)
 
 add_executable(Minecraft
   src/main.cpp
-  src/core/Application.cpp src/core/Camera.cpp src/core/Shader.cpp src/core/DayNightCycle.cpp
+  src/core/Application.cpp src/core/Camera.cpp src/core/Shader.cpp src/core/DayNightCycle.cpp src/core/SaveLoad.cpp src/core/GameState.cpp
   src/player/Player.cpp src/player/PlayerPhysics.cpp src/player/PlayerCamera.cpp src/player/PlayerAnimator.cpp src/player/Inventory.cpp
   src/renderer/Mesh.cpp src/renderer/Renderer.cpp src/renderer/Texture.cpp src/renderer/CuboidMesh.cpp src/renderer/PlayerRenderer.cpp
   src/world/Chunk.cpp src/world/World.cpp src/world/WorldGenerator.cpp src/world/BlockProperties.cpp
@@ -76,4 +76,13 @@ if(BUILD_TESTING)
   target_include_directories(WorldGeneratorTests PRIVATE src)
   target_link_libraries(WorldGeneratorTests PRIVATE glad_gl_core_33 glm::glm)
   add_test(NAME world_generator COMMAND WorldGeneratorTests)
+  add_executable(SaveLoadTests tests/SaveLoadTests.cpp src/core/SaveLoad.cpp)
+  target_include_directories(SaveLoadTests PRIVATE src)
+  add_test(NAME save_load COMMAND SaveLoadTests)
+  add_executable(GameStateTests
+    tests/GameStateTests.cpp src/core/GameState.cpp src/player/Inventory.cpp
+    src/world/World.cpp src/world/WorldGenerator.cpp src/world/Chunk.cpp src/renderer/Mesh.cpp src/core/Shader.cpp)
+  target_include_directories(GameStateTests PRIVATE src)
+  target_link_libraries(GameStateTests PRIVATE glad_gl_core_33 glm::glm)
+  add_test(NAME game_state COMMAND GameStateTests)
 endif()

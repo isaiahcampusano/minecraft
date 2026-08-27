@@ -1,4 +1,6 @@
 #include "Application.h"
+#include "GameState.h"
+#include "SaveLoad.h"
 #include "../utils/Raycaster.h"
 #include "../player/InventoryLayout.h"
 #include "../world/BlockRegistry.h"
@@ -15,9 +17,11 @@ Application::Application(){
   m_window=glfwCreateWindow(1280,720,"Minecraft Superflat",nullptr,nullptr);if(!m_window){glfwTerminate();throw std::runtime_error("Could not create window");}
   glfwMakeContextCurrent(m_window);if(!gladLoadGL(reinterpret_cast<GLADloadfunc>(glfwGetProcAddress)))throw std::runtime_error("Could not load OpenGL");
   m_renderer=std::make_unique<Renderer>();glfwSetWindowUserPointer(m_window,this);glfwSetCursorPosCallback(m_window,cursor);glfwSetScrollCallback(m_window,scroll);glfwSetMouseButtonCallback(m_window,mouseButton);glfwSetKeyCallback(m_window,key);
-  glfwSetInputMode(m_window,GLFW_CURSOR,GLFW_CURSOR_DISABLED);glfwSwapInterval(1);glEnable(GL_DEPTH_TEST);glEnable(GL_CULL_FACE);glCullFace(GL_BACK);
+  glfwSetInputMode(m_window,GLFW_CURSOR,GLFW_CURSOR_DISABLED);glfwSwapInterval(1);glEnable(GL_DEPTH_TEST);glEnable(GL_CULL_FACE);glCullFace(GL_BACK);loadGameState();
 }
-Application::~Application(){m_renderer.reset();if(m_window)glfwDestroyWindow(m_window);glfwTerminate();}
+Application::~Application(){saveGameState();m_renderer.reset();if(m_window)glfwDestroyWindow(m_window);glfwTerminate();}
+void Application::saveGameState()const{SaveLoad::save(GameState::capture(m_inventory,m_world));}
+void Application::loadGameState(){SaveData data;if(SaveLoad::load(data))GameState::apply(data,m_inventory,m_world);}
 void Application::cursor(GLFWwindow*w,double x,double y){auto*a=static_cast<Application*>(glfwGetWindowUserPointer(w));if(!a->m_captured)return;if(a->m_firstMouse){a->m_lastX=x;a->m_lastY=y;a->m_firstMouse=false;}a->m_player.look(static_cast<float>(x-a->m_lastX),static_cast<float>(a->m_lastY-y));a->m_lastX=x;a->m_lastY=y;}
 void Application::scroll(GLFWwindow*w,double,double y){auto*a=static_cast<Application*>(glfwGetWindowUserPointer(w));if(a->m_inventoryOpen){const int pages=static_cast<int>((allPlaceableBlocks().size()+InventoryLayout::CREATIVE_PAGE_SIZE-1)/InventoryLayout::CREATIVE_PAGE_SIZE);a->m_creativePage=std::clamp(a->m_creativePage+(y<0?1:-1),0,std::max(0,pages-1));return;}a->m_camera.fov=std::clamp(a->m_camera.fov-static_cast<float>(y)*2.f,30.f,90.f);}
 void Application::key(GLFWwindow*w,int k,int,int action,int){auto*a=static_cast<Application*>(glfwGetWindowUserPointer(w));if(action!=GLFW_PRESS)return;if(k>=GLFW_KEY_1&&k<=GLFW_KEY_9)a->m_inventory.select(k-GLFW_KEY_1);else if(k==GLFW_KEY_E){a->m_inventoryOpen=!a->m_inventoryOpen;a->m_captured=!a->m_inventoryOpen;a->m_firstMouse=true;glfwSetInputMode(w,GLFW_CURSOR,a->m_captured?GLFW_CURSOR_DISABLED:GLFW_CURSOR_NORMAL);}else if(k==GLFW_KEY_ESCAPE&&!a->m_inventoryOpen){a->m_captured=!a->m_captured;a->m_firstMouse=true;glfwSetInputMode(w,GLFW_CURSOR,a->m_captured?GLFW_CURSOR_DISABLED:GLFW_CURSOR_NORMAL);}else if(k==GLFW_KEY_F)a->m_player.toggleFly();else if(k==GLFW_KEY_F5)a->m_camera.togglePOV();}

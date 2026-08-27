@@ -21,7 +21,11 @@ public:
   void swapHotbar(int i);
   void swapBackpack(int i);
   bool giveCreative(BlockType type);
+  void setCursorStack(const ItemStack& stack);
+  void setHotbarSlot(int i,const ItemStack& stack);
+  void setBackpackSlot(int i,const ItemStack& stack);
 private:
+  static ItemStack normalized(const ItemStack& stack);
   static bool addTo(std::array<ItemStack,HOTBAR_SLOTS>& slots,BlockType type);
   static bool addTo(std::array<ItemStack,BACKPACK_SLOTS>& slots,BlockType type);
   std::array<ItemStack,HOTBAR_SLOTS> m_hotbar{};

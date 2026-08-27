@@ -37,6 +37,11 @@ int main() {
   creative.swapBackpack(0);
   if(!creative.giveCreative(BlockType::LEAVES)||creative.cursorStack().count!=Inventory::CREATIVE_STACK_SIZE||creative.backpackSlot(0).type!=BlockType::LEAVES||creative.backpackSlot(0).count!=Inventory::CREATIVE_STACK_SIZE)return fail("creative source was depleted");
 
+  Inventory restoring;restoring.setCursorStack({BlockType::LEAVES,99});restoring.setHotbarSlot(8,{BlockType::GLASS,12});restoring.setBackpackSlot(26,{BlockType::COBBLESTONE,41});
+  if(restoring.cursorStack().type!=BlockType::LEAVES||restoring.cursorStack().count!=Inventory::MAX_STACK_SIZE)return fail("restored cursor stack was not normalized");
+  if(restoring.hotbarSlot(8).type!=BlockType::GLASS||restoring.hotbarSlot(8).count!=12||restoring.backpackSlot(26).type!=BlockType::COBBLESTONE||restoring.backpackSlot(26).count!=41)return fail("inventory slot setters did not restore stacks");
+  restoring.setCursorStack({BlockType::AIR,4});if(restoring.cursorStack().type!=BlockType::AIR||restoring.cursorStack().count!=0)return fail("invalid restored stack was not cleared");
+
   inventory.select(-10); if (inventory.selectedSlot() != 0) return fail("negative selection was not clamped");
   inventory.select(99); if (inventory.selectedSlot() != Inventory::HOTBAR_SLOTS - 1) return fail("high selection was not clamped");
   return 0;
