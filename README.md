@@ -1,5 +1,8 @@
 # Minecraft Superflat
 
+<img width="1281" height="716" alt="image" src="https://github.com/user-attachments/assets/f2dd7b8b-62ca-4aa1-8367-9cf5aea5df74" />
+
+
 A small Minecraft-style voxel demo in C++17 and OpenGL 3.3. It streams 16×256×16 chunks over a finite 1000×1000 world, generates a varied Bedrock + Stone + Dirt superflat stack with full oak trees, meshes visible faces, and supports first-person movement, collision, inventory management, and persistent block editing.
 
 ## Build
