@@ -11,6 +11,10 @@ The player is a physical entity whose position is measured at its feet. It has a
 - `PlayerAnimator` drives independent joint poses from velocity, grounded state, and flight state.
 - `CuboidMesh` provides indexed six-face geometry, normals, and directional face colors.
 
+## Inventory
+
+`Inventory` owns a fixed nine-slot hotbar of block item stacks. Breaking a non-bedrock block stacks it into a matching slot or the first empty slot; a full hotbar discards the collected item. Number keys 1–9 select a slot, and placing consumes one block from the selected stack. The hotbar starts empty and is rendered at the bottom center of the HUD with block-color swatches and stack counts.
+
 ## Controls
 
 - **WASD:** move

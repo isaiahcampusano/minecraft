@@ -18,10 +18,11 @@ Run `Minecraft` from the build output directory.
 - **WASD** move, **Space/Left Shift** fly up/down
 - **Mouse** look, **scroll** changes field of view
 - **Left click** breaks a block
-- **Right click** places dirt on the selected face
+- **Right click** places the selected hotbar block on the selected face
+- **1–9** selects a hotbar slot
 - **F** toggles flying, **Escape** releases/captures the mouse
 - **Space** jumps while grounded; **F5** switches first/third person
 
 The texture atlas is generated in memory, so no external asset files are required.
 
-The HUD shows your coordinates, flying state, and targeted block. A center crosshair and wireframe selection box make block editing precise; fog, a sky gradient, and textured block borders improve depth perception.
+The HUD shows your coordinates, flying state, targeted block, and nine-slot hotbar. Broken blocks go directly into the hotbar; right click places and consumes the selected item. A center crosshair and wireframe selection box make block editing precise; fog, a sky gradient, and textured block borders improve depth perception.

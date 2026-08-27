@@ -16,7 +16,7 @@ void Chunk::generateMesh(const std::function<BlockType(int,int,int)>& at){
   const int ox=m_position.x*SIZE_X,oz=m_position.y*SIZE_Z;
   for(int y=0;y<SIZE_Y;++y)for(int z=0;z<SIZE_Z;++z)for(int x=0;x<SIZE_X;++x){
     BlockType type=getBlock(x,y,z);if(type==BlockType::AIR)continue;
-    int tile=type==BlockType::GRASS?0:type==BlockType::DIRT?1:2; float u0=(tile+.02f)/4.f,u1=(tile+.98f)/4.f;
+    int tile=static_cast<int>(type)-1; float u0=(tile+.02f)/9.f,u1=(tile+.98f)/9.f;
     for(int f=0;f<6;++f){int wx=ox+x,wz=oz+z;if(isSolid(at(wx+dirs[f][0],y+dirs[f][1],wz+dirs[f][2])))continue;
       unsigned base=static_cast<unsigned>(v.size());float us[4]={u0,u0,u1,u1},vs[4]={0,1,1,0};
       for(int n=0;n<4;++n)v.push_back({wx+q[f][n][0],y+q[f][n][1],wz+q[f][n][2],us[n],vs[n],shade[f]});

@@ -1,10 +1,10 @@
 #include "Texture.h"
 #include <array>
 Texture::Texture(){
-  constexpr int tileSize=16,width=tileSize*4,height=tileSize;
+  constexpr int tileSize=16,tileCount=9,width=tileSize*tileCount,height=tileSize;
   std::array<unsigned char,width*height*4> pixels{};
-  const int colors[4][3]={{105,178,62},{126,78,43},{58,58,60},{88,147,52}};
-  for(int tile=0;tile<4;++tile)for(int y=0;y<tileSize;++y)for(int x=0;x<tileSize;++x){
+  const int colors[tileCount][3]={{105,178,62},{126,78,43},{58,58,60},{122,122,122},{102,102,106},{171,132,76},{219,207,155},{177,218,224},{88,147,52}};
+  for(int tile=0;tile<tileCount;++tile)for(int y=0;y<tileSize;++y)for(int x=0;x<tileSize;++x){
     const bool edge=x==0||y==0||x==tileSize-1||y==tileSize-1;
     const int noise=((x*17+y*31+tile*13)%17)-8;
     const int factor=edge?-22:noise;

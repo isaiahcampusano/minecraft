@@ -18,7 +18,7 @@ glad_add_library(glad_gl_core_33 REPRODUCIBLE API gl:core=3.3)
 add_executable(Minecraft
   src/main.cpp
   src/core/Application.cpp src/core/Camera.cpp src/core/Shader.cpp
-  src/player/Player.cpp src/player/PlayerPhysics.cpp src/player/PlayerCamera.cpp src/player/PlayerAnimator.cpp
+  src/player/Player.cpp src/player/PlayerPhysics.cpp src/player/PlayerCamera.cpp src/player/PlayerAnimator.cpp src/player/Inventory.cpp
   src/renderer/Mesh.cpp src/renderer/Renderer.cpp src/renderer/Texture.cpp src/renderer/CuboidMesh.cpp src/renderer/PlayerRenderer.cpp
   src/world/Chunk.cpp src/world/World.cpp src/world/WorldGenerator.cpp
   src/utils/Raycaster.cpp)
@@ -45,4 +45,7 @@ if(BUILD_TESTING)
   target_include_directories(PlayerAnimatorTests PRIVATE src)
   target_link_libraries(PlayerAnimatorTests PRIVATE glm::glm)
   add_test(NAME player_animator COMMAND PlayerAnimatorTests)
+  add_executable(InventoryTests tests/InventoryTests.cpp src/player/Inventory.cpp)
+  target_include_directories(InventoryTests PRIVATE src)
+  add_test(NAME inventory COMMAND InventoryTests)
 endif()

@@ -3,6 +3,7 @@
 #include "../world/World.h"
 #include "PlayerRenderer.h"
 #include "../player/Player.h"
+#include "../player/Inventory.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <array>
 #include <vector>
@@ -52,10 +53,23 @@ void Renderer::drawOutline(const RayHit& hit,const glm::mat4& view,const glm::ma
     x,y,z,x,y,z+s, x+s,y,z,x+s,y,z+s, x+s,y+s,z,x+s,y+s,z+s, x,y+s,z,x,y+s,z+s};
   glBindBuffer(GL_ARRAY_BUFFER,m_lineVbo);glBufferData(GL_ARRAY_BUFFER,sizeof(p),p,GL_DYNAMIC_DRAW);m_colorShader.use();m_colorShader.setMat4("transform",projection*view);m_colorShader.setVec4("tint",{.05f,.05f,.05f,1});glLineWidth(2.5f);glBindVertexArray(m_lineVao);glDrawArrays(GL_LINES,0,24);
 }
-void Renderer::drawOverlay(int width,int height,const std::string& text){
-  std::vector<float> p;auto quad=[&](float x,float y,float w,float h){float q[]={x,y,0,x+w,y,0,x+w,y+h,0,x,y,0,x+w,y+h,0,x,y+h,0};p.insert(p.end(),q,q+18);};
+void Renderer::drawOverlay(int width,int height,const std::string& text,const Inventory& inventory){
+  const glm::mat4 screen=glm::ortho(0.f,static_cast<float>(width),0.f,static_cast<float>(height));
+  auto drawQuads=[&](const std::vector<float>& vertices,const glm::vec4& color){if(vertices.empty())return;glBindBuffer(GL_ARRAY_BUFFER,m_lineVbo);glBufferData(GL_ARRAY_BUFFER,static_cast<GLsizeiptr>(vertices.size()*sizeof(float)),vertices.data(),GL_DYNAMIC_DRAW);m_colorShader.use();m_colorShader.setMat4("transform",screen);m_colorShader.setVec4("tint",color);glBindVertexArray(m_lineVao);glDrawArrays(GL_TRIANGLES,0,static_cast<GLsizei>(vertices.size()/3));};
+  auto appendQuad=[](std::vector<float>& vertices,float x,float y,float w,float h){float q[]={x,y,0,x+w,y,0,x+w,y+h,0,x,y,0,x+w,y+h,0,x,y+h,0};vertices.insert(vertices.end(),q,q+18);};
+  glDisable(GL_DEPTH_TEST);glDisable(GL_CULL_FACE);
+  std::vector<float> p;auto quad=[&](float x,float y,float w,float h){appendQuad(p,x,y,w,h);};
   float cx=width*.5f,cy=height*.5f;quad(cx-9,cy-1,18,2);quad(cx-1,cy-9,2,18);
   float penX=12,penY=height-18;for(char c:text){if(c=='\n'){penX=12;penY-=18;continue;}auto rows=glyph(c);for(int row=0;row<7;++row)for(int col=0;col<5;++col)if(rows[row]&(1<<(4-col)))quad(penX+col*2,penY-row*2,2,2);penX+=12;}
-  glBindBuffer(GL_ARRAY_BUFFER,m_lineVbo);glBufferData(GL_ARRAY_BUFFER,static_cast<GLsizeiptr>(p.size()*sizeof(float)),p.data(),GL_DYNAMIC_DRAW);m_colorShader.use();m_colorShader.setMat4("transform",glm::ortho(0.f,static_cast<float>(width),0.f,static_cast<float>(height)));m_colorShader.setVec4("tint",{.05f,.05f,.05f,.9f});glDisable(GL_DEPTH_TEST);glDisable(GL_CULL_FACE);glBindVertexArray(m_lineVao);glDrawArrays(GL_TRIANGLES,0,static_cast<GLsizei>(p.size()/3));glEnable(GL_CULL_FACE);glEnable(GL_DEPTH_TEST);
+  drawQuads(p,{.05f,.05f,.05f,.9f});
+
+  constexpr float slotSize=48.f,gap=4.f,total=Inventory::SLOT_COUNT*slotSize+(Inventory::SLOT_COUNT-1)*gap;
+  const float startX=(width-total)*.5f,slotY=16.f;
+  std::vector<float> borders,selectedBorder,slots;
+  for(int i=0;i<Inventory::SLOT_COUNT;++i){float x=startX+i*(slotSize+gap);if(i==inventory.selectedSlot())appendQuad(selectedBorder,x-4,slotY-4,slotSize+8,slotSize+8);else appendQuad(borders,x-2,slotY-2,slotSize+4,slotSize+4);appendQuad(slots,x,slotY,slotSize,slotSize);}
+  drawQuads(borders,{.38f,.38f,.40f,.95f});drawQuads(selectedBorder,{.95f,.95f,.88f,1.f});drawQuads(slots,{.16f,.16f,.18f,.94f});
+  constexpr float colors[9][3]={{105.f/255,178.f/255,62.f/255},{126.f/255,78.f/255,43.f/255},{58.f/255,58.f/255,60.f/255},{122.f/255,122.f/255,122.f/255},{102.f/255,102.f/255,106.f/255},{171.f/255,132.f/255,76.f/255},{219.f/255,207.f/255,155.f/255},{177.f/255,218.f/255,224.f/255},{88.f/255,147.f/255,52.f/255}};
+  for(int i=0;i<Inventory::SLOT_COUNT;++i){const auto& stack=inventory.slot(i);if(stack.count<=0||stack.type==BlockType::AIR)continue;float x=startX+i*(slotSize+gap);std::vector<float> swatch;appendQuad(swatch,x+8,slotY+8,slotSize-16,slotSize-16);int colorIndex=static_cast<int>(stack.type)-1;drawQuads(swatch,{colors[colorIndex][0],colors[colorIndex][1],colors[colorIndex][2],1.f});std::string count=std::to_string(stack.count);std::vector<float> digits;float digitX=x+slotSize-4.f-static_cast<float>(count.size())*8.f;for(char c:count){auto rows=glyph(c);for(int row=0;row<7;++row)for(int col=0;col<5;++col)if(rows[row]&(1<<(4-col)))appendQuad(digits,digitX+col,slotY+4+(6-row),1,1);digitX+=8;}drawQuads(digits,{1,1,1,1});}
+  glEnable(GL_CULL_FACE);glEnable(GL_DEPTH_TEST);
 }
-void Renderer::draw(const World&w,const Player&player,bool showPlayer,float dt,const glm::mat4&v,const glm::mat4&p,const glm::vec3&camera,const RayHit&hit,int width,int height,const std::string&hud){drawSky();m_shader.use();m_shader.setMat4("view",v);m_shader.setMat4("projection",p);m_shader.setInt("atlas",0);m_shader.setVec3("cameraPos",camera);m_shader.setVec3("fogColor",{.70f,.86f,.96f});m_texture.bind();w.render();if(showPlayer)m_playerRenderer->draw(player,dt,v,p,camera);drawOutline(hit,v,p);drawOverlay(width,height,hud);}
+void Renderer::draw(const World&w,const Player&player,bool showPlayer,float dt,const glm::mat4&v,const glm::mat4&p,const glm::vec3&camera,const RayHit&hit,int width,int height,const std::string&hud,const Inventory&inventory){drawSky();m_shader.use();m_shader.setMat4("view",v);m_shader.setMat4("projection",p);m_shader.setInt("atlas",0);m_shader.setVec3("cameraPos",camera);m_shader.setVec3("fogColor",{.70f,.86f,.96f});m_texture.bind();w.render();if(showPlayer)m_playerRenderer->draw(player,dt,v,p,camera);drawOutline(hit,v,p);drawOverlay(width,height,hud,inventory);}
