@@ -1,6 +1,7 @@
 #include "PlayerRenderer.h"
 #include "CuboidMesh.h"
 #include "../player/Player.h"
+#include "../core/DayNightCycle.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <array>
 #include <cmath>
@@ -11,8 +12,8 @@ layout(location=0)in vec3 p;layout(location=1)in vec3 normal;layout(location=2)i
 out vec3 vNormal;out vec3 vColor;out vec3 vWorld;uniform mat4 projection,view,model;
 void main(){vec4 world=model*vec4(p,1);vWorld=world.xyz;vNormal=mat3(transpose(inverse(model)))*normal;vColor=color;gl_Position=projection*view*world;})";
 const char* FS=R"(#version 330 core
-in vec3 vNormal;in vec3 vColor;in vec3 vWorld;out vec4 outColor;uniform vec3 lightDir,viewPos,fogColor;
-void main(){vec3 n=normalize(vNormal);float diffuse=max(dot(n,normalize(lightDir)),0.0);float rim=pow(1.0-max(dot(n,normalize(viewPos-vWorld)),0.0),3.0)*.08;vec3 lit=vColor*(.38+diffuse*.68+rim);float d=length(viewPos-vWorld);float fog=clamp(1.0-exp(-.00055*d*d),0.0,.9);outColor=vec4(mix(lit,fogColor,fog),1);})";
+in vec3 vNormal;in vec3 vColor;in vec3 vWorld;out vec4 outColor;uniform vec3 lightDir,viewPos,fogColor;uniform float daylight;
+void main(){vec3 n=normalize(vNormal);float diffuse=max(dot(n,normalize(lightDir)),0.0);float rim=pow(1.0-max(dot(n,normalize(viewPos-vWorld)),0.0),3.0)*.08;vec3 lit=vColor*(mix(.15,.38,daylight)+diffuse*.68*daylight+rim);float d=length(viewPos-vWorld);float fog=clamp(1.0-exp(-.00055*d*d),0.0,.9);outColor=vec4(mix(lit,fogColor,fog),1);})";
 std::array<glm::vec3,6> shades(glm::vec3 base){return{base*.82f,base*.7f,glm::min(base*1.16f,glm::vec3(1)),base*.52f,base*.94f,base*.64f};}
 }
 
@@ -26,9 +27,9 @@ PlayerRenderer::PlayerRenderer():m_shader(VS,FS){
 }
 PlayerRenderer::~PlayerRenderer()=default;
 void PlayerRenderer::drawPart(const CuboidMesh& mesh,const glm::mat4& model){m_shader.setMat4("model",model);mesh.draw();}
-void PlayerRenderer::draw(const Player&p,float dt,const glm::mat4&view,const glm::mat4&projection,const glm::vec3&camera){
+void PlayerRenderer::draw(const Player&p,float dt,const glm::mat4&view,const glm::mat4&projection,const glm::vec3&camera,const DayNightCycle&dayNight){
   float speed=std::sqrt(p.velocity.x*p.velocity.x+p.velocity.z*p.velocity.z);float cameraYaw=glm::radians(-p.yaw-90.f);if(!m_hasBodyYaw){m_bodyYaw=cameraYaw;m_hasBodyYaw=true;}if(speed>.1f){float desired=std::atan2(-p.velocity.x,-p.velocity.z);float delta=std::atan2(std::sin(desired-m_bodyYaw),std::cos(desired-m_bodyYaw));m_bodyYaw+=delta*(1.f-std::exp(-10.f*dt));}
-  m_animator.update(p,dt,m_bodyYaw);const PlayerPose&a=m_animator.pose();m_shader.use();m_shader.setMat4("view",view);m_shader.setMat4("projection",projection);m_shader.setVec3("lightDir",glm::normalize(glm::vec3{.55f,1.f,.35f}));m_shader.setVec3("viewPos",camera);m_shader.setVec3("fogColor",{.70f,.86f,.96f});
+  m_animator.update(p,dt,m_bodyYaw);const PlayerPose&a=m_animator.pose();m_shader.use();m_shader.setMat4("view",view);m_shader.setMat4("projection",projection);m_shader.setVec3("lightDir",dayNight.sunDirection());m_shader.setVec3("viewPos",camera);m_shader.setVec3("fogColor",dayNight.skyBottom());m_shader.setFloat("daylight",dayNight.daylight());
   glm::mat4 base=glm::translate(glm::mat4(1),p.position)*glm::rotate(glm::mat4(1),m_bodyYaw,{0,1,0});
   glm::mat4 body=base*glm::translate(glm::mat4(1),{0,.65f+a.torsoBob,0})*glm::rotate(glm::mat4(1),a.torsoSway,{0,0,1})*glm::rotate(glm::mat4(1),a.torsoLean,{1,0,0})*glm::translate(glm::mat4(1),{0,-.65f,0});
   drawPart(*m_torso,body*glm::translate(glm::mat4(1),{0,.975f,0}));

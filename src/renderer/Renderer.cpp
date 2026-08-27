@@ -4,6 +4,7 @@
 #include "PlayerRenderer.h"
 #include "../player/Player.h"
 #include "../player/Inventory.h"
+#include "../core/DayNightCycle.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <array>
 #include <vector>
@@ -14,8 +15,8 @@ layout(location=0)in vec3 p;layout(location=1)in vec2 uv;layout(location=2)in fl
 out vec2 vUV;out float vShade;out vec3 vWorld;uniform mat4 projection,view;
 void main(){vUV=uv;vShade=shade;vWorld=p;gl_Position=projection*view*vec4(p,1.0);})";
 const char* FS=R"(#version 330 core
-in vec2 vUV;in float vShade;in vec3 vWorld;out vec4 color;uniform sampler2D atlas;uniform vec3 cameraPos;uniform vec3 fogColor;
-void main(){vec4 base=texture(atlas,vUV)*vec4(vec3(vShade),1.0);float d=length(vWorld-cameraPos);float fog=1.0-exp(-0.00055*d*d);color=mix(base,vec4(fogColor,1.0),clamp(fog,0.0,0.92));})";
+in vec2 vUV;in float vShade;in vec3 vWorld;out vec4 color;uniform sampler2D atlas;uniform vec3 cameraPos;uniform vec3 fogColor;uniform float daylight;
+void main(){vec4 base=texture(atlas,vUV)*vec4(vec3(vShade),1.0);vec3 lit=base.rgb*mix(0.15,1.0,daylight);float d=length(vWorld-cameraPos);float fog=1.0-exp(-0.00055*d*d);color=vec4(mix(lit,fogColor,clamp(fog,0.0,0.92)),base.a);})";
 const char* COLOR_VS=R"(#version 330 core
 layout(location=0)in vec3 p;uniform mat4 transform;void main(){gl_Position=transform*vec4(p,1.0);})";
 const char* COLOR_FS=R"(#version 330 core
@@ -23,7 +24,7 @@ out vec4 color;uniform vec4 tint;void main(){color=tint;})";
 const char* SKY_VS=R"(#version 330 core
 layout(location=0)in vec2 p;out float height;void main(){height=p.y;gl_Position=vec4(p,0.999,1.0);})";
 const char* SKY_FS=R"(#version 330 core
-in float height;out vec4 color;void main(){float t=height*.5+.5;color=vec4(mix(vec3(.70,.86,.96),vec3(.20,.52,.86),t),1.0);})";
+in float height;out vec4 color;uniform vec3 topColor,bottomColor;void main(){float t=height*.5+.5;color=vec4(mix(bottomColor,topColor,t),1.0);})";
 
 std::array<unsigned char,7> glyph(char c){
   switch(c){
@@ -46,7 +47,7 @@ Renderer::Renderer():m_shader(VS,FS),m_colorShader(COLOR_VS,COLOR_FS),m_skyShade
   const float sky[]={-1,-1,1,-1,-1,1,1,1};glGenVertexArrays(1,&m_skyVao);glGenBuffers(1,&m_skyVbo);glBindVertexArray(m_skyVao);glBindBuffer(GL_ARRAY_BUFFER,m_skyVbo);glBufferData(GL_ARRAY_BUFFER,sizeof(sky),sky,GL_STATIC_DRAW);glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,2*sizeof(float),nullptr);glEnableVertexAttribArray(0);glBindVertexArray(0);m_playerRenderer=std::make_unique<PlayerRenderer>();
 }
 Renderer::~Renderer(){m_playerRenderer.reset();if(m_skyVbo)glDeleteBuffers(1,&m_skyVbo);if(m_skyVao)glDeleteVertexArrays(1,&m_skyVao);if(m_lineVbo)glDeleteBuffers(1,&m_lineVbo);if(m_lineVao)glDeleteVertexArrays(1,&m_lineVao);}
-void Renderer::drawSky(){glDisable(GL_DEPTH_TEST);m_skyShader.use();glBindVertexArray(m_skyVao);glDrawArrays(GL_TRIANGLE_STRIP,0,4);glEnable(GL_DEPTH_TEST);}
+void Renderer::drawSky(const DayNightCycle& dayNight){glDisable(GL_DEPTH_TEST);m_skyShader.use();m_skyShader.setVec3("topColor",dayNight.skyTop());m_skyShader.setVec3("bottomColor",dayNight.skyBottom());glBindVertexArray(m_skyVao);glDrawArrays(GL_TRIANGLE_STRIP,0,4);glEnable(GL_DEPTH_TEST);}
 void Renderer::drawOutline(const RayHit& hit,const glm::mat4& view,const glm::mat4& projection){if(!hit.hit)return;constexpr float e=.002f;float x=hit.block.x-e,y=hit.block.y-e,z=hit.block.z-e,s=1.f+2*e;
   const float p[]={x,y,z,x+s,y,z, x+s,y,z,x+s,y+s,z, x+s,y+s,z,x,y+s,z, x,y+s,z,x,y,z,
     x,y,z+s,x+s,y,z+s, x+s,y,z+s,x+s,y+s,z+s, x+s,y+s,z+s,x,y+s,z+s, x,y+s,z+s,x,y,z+s,
@@ -72,4 +73,4 @@ void Renderer::drawOverlay(int width,int height,const std::string& text,const In
   for(int i=0;i<Inventory::SLOT_COUNT;++i){const auto& stack=inventory.slot(i);if(stack.count<=0||stack.type==BlockType::AIR)continue;float x=startX+i*(slotSize+gap);std::vector<float> swatch;appendQuad(swatch,x+8,slotY+8,slotSize-16,slotSize-16);int colorIndex=static_cast<int>(stack.type)-1;drawQuads(swatch,{colors[colorIndex][0],colors[colorIndex][1],colors[colorIndex][2],1.f});std::string count=std::to_string(stack.count);std::vector<float> digits;float digitX=x+slotSize-4.f-static_cast<float>(count.size())*8.f;for(char c:count){auto rows=glyph(c);for(int row=0;row<7;++row)for(int col=0;col<5;++col)if(rows[row]&(1<<(4-col)))appendQuad(digits,digitX+col,slotY+4+(6-row),1,1);digitX+=8;}drawQuads(digits,{1,1,1,1});}
   glEnable(GL_CULL_FACE);glEnable(GL_DEPTH_TEST);
 }
-void Renderer::draw(const World&w,const Player&player,bool showPlayer,float dt,const glm::mat4&v,const glm::mat4&p,const glm::vec3&camera,const RayHit&hit,int width,int height,const std::string&hud,const Inventory&inventory){drawSky();m_shader.use();m_shader.setMat4("view",v);m_shader.setMat4("projection",p);m_shader.setInt("atlas",0);m_shader.setVec3("cameraPos",camera);m_shader.setVec3("fogColor",{.70f,.86f,.96f});m_texture.bind();w.render();if(showPlayer)m_playerRenderer->draw(player,dt,v,p,camera);drawOutline(hit,v,p);drawOverlay(width,height,hud,inventory);}
+void Renderer::draw(const World&w,const Player&player,bool showPlayer,float dt,const glm::mat4&v,const glm::mat4&p,const glm::vec3&camera,const RayHit&hit,int width,int height,const std::string&hud,const Inventory&inventory,const DayNightCycle&dayNight){drawSky(dayNight);m_shader.use();m_shader.setMat4("view",v);m_shader.setMat4("projection",p);m_shader.setInt("atlas",0);m_shader.setVec3("cameraPos",camera);m_shader.setVec3("fogColor",dayNight.skyBottom());m_shader.setFloat("daylight",dayNight.daylight());m_texture.bind();w.render();if(showPlayer)m_playerRenderer->draw(player,dt,v,p,camera,dayNight);drawOutline(hit,v,p);drawOverlay(width,height,hud,inventory);}

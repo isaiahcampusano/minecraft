@@ -17,7 +17,7 @@ glad_add_library(glad_gl_core_33 REPRODUCIBLE API gl:core=3.3)
 
 add_executable(Minecraft
   src/main.cpp
-  src/core/Application.cpp src/core/Camera.cpp src/core/Shader.cpp
+  src/core/Application.cpp src/core/Camera.cpp src/core/Shader.cpp src/core/DayNightCycle.cpp
   src/player/Player.cpp src/player/PlayerPhysics.cpp src/player/PlayerCamera.cpp src/player/PlayerAnimator.cpp src/player/Inventory.cpp
   src/renderer/Mesh.cpp src/renderer/Renderer.cpp src/renderer/Texture.cpp src/renderer/CuboidMesh.cpp src/renderer/PlayerRenderer.cpp
   src/world/Chunk.cpp src/world/World.cpp src/world/WorldGenerator.cpp
@@ -48,4 +48,12 @@ if(BUILD_TESTING)
   add_executable(InventoryTests tests/InventoryTests.cpp src/player/Inventory.cpp)
   target_include_directories(InventoryTests PRIVATE src)
   add_test(NAME inventory COMMAND InventoryTests)
+  add_executable(DayNightCycleTests tests/DayNightCycleTests.cpp src/core/DayNightCycle.cpp)
+  target_include_directories(DayNightCycleTests PRIVATE src)
+  target_link_libraries(DayNightCycleTests PRIVATE glm::glm)
+  add_test(NAME day_night_cycle COMMAND DayNightCycleTests)
+  add_executable(ChunkLightingTests tests/ChunkLightingTests.cpp src/world/Chunk.cpp src/renderer/Mesh.cpp)
+  target_include_directories(ChunkLightingTests PRIVATE src)
+  target_link_libraries(ChunkLightingTests PRIVATE glad_gl_core_33 glm::glm)
+  add_test(NAME chunk_lighting COMMAND ChunkLightingTests)
 endif()
