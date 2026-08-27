@@ -3,8 +3,8 @@
 #include "../world/World.h"
 
 namespace {
-SaveData::SlotData saveSlot(const ItemStack& stack){return{stack.type,static_cast<std::uint8_t>(stack.count)};}
-ItemStack itemStack(const SaveData::SlotData& slot){return{slot.type,slot.count};}
+SaveData::SlotData saveSlot(const ItemStack& stack){SaveData::SlotData slot;slot.kind=stack.kind;slot.blockType=stack.blockType;slot.materialType=stack.materialType;slot.toolKind=stack.toolKind;slot.toolTier=stack.toolTier;slot.count=static_cast<std::uint8_t>(stack.count);slot.durability=static_cast<std::uint16_t>(stack.durability);return slot;}
+ItemStack itemStack(const SaveData::SlotData& slot){ItemStack stack;stack.kind=slot.kind;stack.blockType=slot.blockType;stack.materialType=slot.materialType;stack.toolKind=slot.toolKind;stack.toolTier=slot.toolTier;stack.count=slot.count;stack.durability=slot.durability;return stack;}
 }
 
 SaveData GameState::capture(const Inventory& inventory,const World& world){

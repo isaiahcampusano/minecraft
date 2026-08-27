@@ -17,6 +17,6 @@ public:
   void setMiningTarget(const glm::ivec3& block){if(targetedBlock!=block){targetedBlock=block;blockBreakProgress=0.f;}}
   void resetMiningProgress(){blockBreakProgress=0.f;}
   void clearMiningTarget(){targetedBlock={-1,-1,-1};blockBreakProgress=0.f;}
-  bool advanceMining(BlockType type,float dt){const auto& properties=getBlockProperties(type);if(!properties.diggable||properties.hardness<=0.f){blockBreakProgress=0.f;return false;}blockBreakProgress=std::min(1.f,blockBreakProgress+std::max(dt,0.f)/properties.hardness);return blockBreakProgress>=1.f;}
+  bool advanceMining(BlockType type,float dt,const ItemStack& held={}){const auto& properties=getBlockProperties(type);if(!properties.diggable||properties.hardness<=0.f){blockBreakProgress=0.f;return false;}blockBreakProgress=std::min(1.f,blockBreakProgress+std::max(dt,0.f)*miningSpeedMultiplier(held,properties)/properties.hardness);return blockBreakProgress>=1.f;}
 };
 

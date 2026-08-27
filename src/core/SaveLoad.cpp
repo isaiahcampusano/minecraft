@@ -1,5 +1,6 @@
 #include "SaveLoad.h"
 #include "../player/Inventory.h"
+#include "../player/ToolRegistry.h"
 #include <algorithm>
 #include <array>
 #include <cstdlib>
@@ -8,7 +9,7 @@
 #include <utility>
 
 namespace {
-constexpr std::array<char,4> MAGIC={'M','C','v','1'};
+constexpr std::array<char,4> MAGIC={'M','C','v','2'};
 constexpr std::uint32_t MAX_EDIT_COUNT=10000000;
 constexpr int WORLD_SIZE=1000,WORLD_HEIGHT=256;
 
@@ -16,11 +17,25 @@ template<typename T> bool writeValue(std::ostream& out,const T& value){out.write
 template<typename T> bool readValue(std::istream& in,T& value){in.read(reinterpret_cast<char*>(&value),sizeof(value));return static_cast<bool>(in);}
 bool validType(BlockType type){return static_cast<std::size_t>(type)<BLOCK_TYPE_COUNT;}
 bool validSlot(const SaveData::SlotData& slot){
-  if(!validType(slot.type)||slot.count>Inventory::MAX_STACK_SIZE)return false;
-  return(slot.count==0)==(slot.type==BlockType::AIR);
+  if(static_cast<std::size_t>(slot.kind)>static_cast<std::size_t>(ItemKind::TOOL))return false;
+  if(slot.kind==ItemKind::BLOCK)return validType(slot.blockType)&&slot.count<=Inventory::MAX_STACK_SIZE&&slot.durability==0&&((slot.count==0)==(slot.blockType==BlockType::AIR));
+  if(slot.kind==ItemKind::MATERIAL)return static_cast<std::size_t>(slot.materialType)<static_cast<std::size_t>(MaterialType::COUNT)&&slot.count>0&&slot.count<=Inventory::MAX_STACK_SIZE&&slot.durability==0;
+  return static_cast<std::size_t>(slot.toolKind)<static_cast<std::size_t>(ToolKind::COUNT)&&static_cast<std::size_t>(slot.toolTier)<static_cast<std::size_t>(ToolTier::COUNT)&&slot.count==1&&slot.durability>0&&slot.durability<=maxToolDurability(slot.toolTier);
 }
-bool writeSlot(std::ostream& out,const SaveData::SlotData& slot){const auto type=static_cast<std::uint8_t>(slot.type);return writeValue(out,type)&&writeValue(out,slot.count);}
-bool readSlot(std::istream& in,SaveData::SlotData& slot){std::uint8_t type=0;if(!readValue(in,type)||!readValue(in,slot.count))return false;slot.type=static_cast<BlockType>(type);return validSlot(slot);}
+bool writeSlot(std::ostream& out,const SaveData::SlotData& slot){
+  const auto kind=static_cast<std::uint8_t>(slot.kind);if(!writeValue(out,kind))return false;
+  if(slot.kind==ItemKind::BLOCK){const auto type=static_cast<std::uint8_t>(slot.blockType);return writeValue(out,type)&&writeValue(out,slot.count);}
+  if(slot.kind==ItemKind::MATERIAL){const auto type=static_cast<std::uint8_t>(slot.materialType);return writeValue(out,type)&&writeValue(out,slot.count);}
+  const auto toolKind=static_cast<std::uint8_t>(slot.toolKind),tier=static_cast<std::uint8_t>(slot.toolTier);return writeValue(out,toolKind)&&writeValue(out,tier)&&writeValue(out,slot.count)&&writeValue(out,slot.durability);
+}
+bool readSlot(std::istream& in,SaveData::SlotData& slot){
+  std::uint8_t kind=0,type=0;if(!readValue(in,kind))return false;slot.kind=static_cast<ItemKind>(kind);
+  if(slot.kind==ItemKind::BLOCK){if(!readValue(in,type)||!readValue(in,slot.count))return false;slot.blockType=static_cast<BlockType>(type);}
+  else if(slot.kind==ItemKind::MATERIAL){if(!readValue(in,type)||!readValue(in,slot.count))return false;slot.materialType=static_cast<MaterialType>(type);}
+  else if(slot.kind==ItemKind::TOOL){std::uint8_t tier=0;if(!readValue(in,type)||!readValue(in,tier)||!readValue(in,slot.count)||!readValue(in,slot.durability))return false;slot.toolKind=static_cast<ToolKind>(type);slot.toolTier=static_cast<ToolTier>(tier);}
+  else return false;
+  return validSlot(slot);
+}
 bool validEdit(const SaveData::EditData& edit){return edit.x>=0&&edit.x<WORLD_SIZE&&edit.z>=0&&edit.z<WORLD_SIZE&&edit.y>=0&&edit.y<WORLD_HEIGHT&&validType(edit.type);}
 }
 

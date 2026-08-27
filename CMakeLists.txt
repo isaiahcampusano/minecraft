@@ -18,7 +18,7 @@ glad_add_library(glad_gl_core_33 REPRODUCIBLE API gl:core=3.3)
 add_executable(Minecraft
   src/main.cpp
   src/core/Application.cpp src/core/Camera.cpp src/core/Shader.cpp src/core/DayNightCycle.cpp src/core/SaveLoad.cpp src/core/GameState.cpp
-  src/player/Player.cpp src/player/PlayerPhysics.cpp src/player/PlayerCamera.cpp src/player/PlayerAnimator.cpp src/player/Inventory.cpp
+  src/player/Player.cpp src/player/PlayerPhysics.cpp src/player/PlayerCamera.cpp src/player/PlayerAnimator.cpp src/player/Inventory.cpp src/player/CraftingRecipe.cpp
   src/renderer/Mesh.cpp src/renderer/Renderer.cpp src/renderer/Texture.cpp src/renderer/CuboidMesh.cpp src/renderer/PlayerRenderer.cpp
   src/world/Chunk.cpp src/world/World.cpp src/world/WorldGenerator.cpp src/world/BlockProperties.cpp
   src/utils/Raycaster.cpp)
@@ -45,7 +45,7 @@ if(BUILD_TESTING)
   target_include_directories(PlayerAnimatorTests PRIVATE src)
   target_link_libraries(PlayerAnimatorTests PRIVATE glm::glm)
   add_test(NAME player_animator COMMAND PlayerAnimatorTests)
-  add_executable(InventoryTests tests/InventoryTests.cpp src/player/Inventory.cpp)
+  add_executable(InventoryTests tests/InventoryTests.cpp src/player/Inventory.cpp src/player/CraftingRecipe.cpp)
   target_include_directories(InventoryTests PRIVATE src)
   add_test(NAME inventory COMMAND InventoryTests)
   add_executable(DayNightCycleTests tests/DayNightCycleTests.cpp src/core/DayNightCycle.cpp)
@@ -80,9 +80,16 @@ if(BUILD_TESTING)
   target_include_directories(SaveLoadTests PRIVATE src)
   add_test(NAME save_load COMMAND SaveLoadTests)
   add_executable(GameStateTests
-    tests/GameStateTests.cpp src/core/GameState.cpp src/player/Inventory.cpp
+    tests/GameStateTests.cpp src/core/GameState.cpp src/player/Inventory.cpp src/player/CraftingRecipe.cpp
     src/world/World.cpp src/world/WorldGenerator.cpp src/world/Chunk.cpp src/renderer/Mesh.cpp src/core/Shader.cpp)
   target_include_directories(GameStateTests PRIVATE src)
   target_link_libraries(GameStateTests PRIVATE glad_gl_core_33 glm::glm)
   add_test(NAME game_state COMMAND GameStateTests)
+  add_executable(CraftingTests tests/CraftingTests.cpp src/player/CraftingRecipe.cpp)
+  target_include_directories(CraftingTests PRIVATE src)
+  add_test(NAME crafting COMMAND CraftingTests)
+  add_executable(ToolTierTests tests/ToolTierTests.cpp src/player/Inventory.cpp src/player/CraftingRecipe.cpp src/world/BlockProperties.cpp)
+  target_include_directories(ToolTierTests PRIVATE src)
+  target_link_libraries(ToolTierTests PRIVATE glm::glm)
+  add_test(NAME tool_tiers COMMAND ToolTierTests)
 endif()

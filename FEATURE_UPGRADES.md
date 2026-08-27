@@ -69,3 +69,15 @@ The v1.7 disk-persistence pass adds:
 - Round-trip coverage for a full inventory and 1,000 edits, plus integration coverage for placed blocks, broken blocks, and distant chunk edits.
 
 The game uses one local save at `%APPDATA%\MinecraftClone\save.dat` on Windows or `~/.minecraftclone/save.dat` on Linux and macOS. The base terrain is regenerated and only player edits are stored. Multiple save slots, compression, encryption, cloud saves, corruption recovery, and auto-save remain out of scope.
+
+## v1.8
+
+The v1.8 crafting and tool-progression pass adds:
+
+- Tagged block, material, and tool item stacks, with central material/tool names, colors, tier speeds, and durability values.
+- Craftable planks and sticks, a 2×2 personal crafting grid, and a placeable crafting table that opens the 3×3 tool grid.
+- Wooden and stone pickaxes, axes, shovels, swords, and hoes, with procedural swatches and durability bars.
+- Tool-category mining bonuses, wood-pickaxe gating for stone/cobblestone/crafting-table drops, and cobblestone drops from mined stone.
+- The versioned `MCv2` save format, which round-trips tagged inventory items and deliberately rejects older `MCv1` saves.
+
+Crafting tables stay open until the inventory is closed with E or Escape; distance checks and automatic closing when the player walks away remain future work. Iron/diamond tiers, ores, smelting, enchanting, and tool repair remain out of scope.

@@ -1,0 +1,23 @@
+#include "player/Inventory.h"
+#include "player/Player.h"
+#include "player/ToolRegistry.h"
+#include "world/BlockProperties.h"
+#include <cmath>
+#include <iostream>
+
+namespace {int fail(const char* message){std::cerr<<message<<'\n';return 1;}bool near(float a,float b){return std::abs(a-b)<.001f;}}
+
+int main(){
+  const auto& stone=getBlockProperties(BlockType::STONE);ItemStack hand;
+  if(canDropBlock(hand,stone))return fail("hand mining stone was allowed to drop an item");
+  const ItemStack woodPick=ItemStack::tool(ToolKind::PICKAXE,ToolTier::WOOD,maxToolDurability(ToolTier::WOOD));
+  const ItemStack stonePick=ItemStack::tool(ToolKind::PICKAXE,ToolTier::STONE,maxToolDurability(ToolTier::STONE));
+  if(!canDropBlock(woodPick,stone)||miningDrop(BlockType::STONE)!=BlockType::COBBLESTONE)return fail("wood pickaxe did not unlock the cobblestone drop");
+  Player player;player.setMiningTarget({1,2,3});player.advanceMining(BlockType::STONE,1.f,hand);if(!near(player.blockBreakProgress,.25f))return fail("hand mining speed changed");
+  player.clearMiningTarget();player.setMiningTarget({1,2,3});player.advanceMining(BlockType::STONE,1.f,woodPick);if(!near(player.blockBreakProgress,.5f))return fail("wood pickaxe was not twice hand speed");
+  player.clearMiningTarget();player.setMiningTarget({1,2,3});player.advanceMining(BlockType::STONE,1.f,stonePick);if(!near(player.blockBreakProgress,.75f))return fail("stone pickaxe was not faster than wood");
+  const ItemStack axe=ItemStack::tool(ToolKind::AXE,ToolTier::STONE,maxToolDurability(ToolTier::STONE));if(toolMatches(axe,stone)||!near(miningSpeedMultiplier(axe,stone),1.f))return fail("mismatched tool received a mining bonus");
+  Inventory inventory;inventory.setHotbarSlot(0,woodPick);for(int i=1;i<maxToolDurability(ToolTier::WOOD);++i)if(!inventory.damageSelectedTool()||inventory.selectedStack().empty())return fail("wood tool broke before its documented durability");if(!inventory.damageSelectedTool()||!inventory.selectedStack().empty())return fail("wood tool did not clear at exactly zero durability");
+  inventory.setHotbarSlot(0,axe);const int before=inventory.selectedStack().durability;if(toolMatches(inventory.selectedStack(),stone))inventory.damageSelectedTool();if(inventory.selectedStack().durability!=before)return fail("mismatched tool took category durability damage");
+  return 0;
+}
