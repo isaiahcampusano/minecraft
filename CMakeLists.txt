@@ -20,7 +20,7 @@ add_executable(Minecraft
   src/core/Application.cpp src/core/Camera.cpp src/core/Shader.cpp src/core/DayNightCycle.cpp
   src/player/Player.cpp src/player/PlayerPhysics.cpp src/player/PlayerCamera.cpp src/player/PlayerAnimator.cpp src/player/Inventory.cpp
   src/renderer/Mesh.cpp src/renderer/Renderer.cpp src/renderer/Texture.cpp src/renderer/CuboidMesh.cpp src/renderer/PlayerRenderer.cpp
-  src/world/Chunk.cpp src/world/World.cpp src/world/WorldGenerator.cpp
+  src/world/Chunk.cpp src/world/World.cpp src/world/WorldGenerator.cpp src/world/BlockProperties.cpp
   src/utils/Raycaster.cpp)
 target_include_directories(Minecraft PRIVATE src)
 target_link_libraries(Minecraft PRIVATE glfw glad_gl_core_33 glm::glm)
@@ -56,4 +56,11 @@ if(BUILD_TESTING)
   target_include_directories(ChunkLightingTests PRIVATE src)
   target_link_libraries(ChunkLightingTests PRIVATE glad_gl_core_33 glm::glm)
   add_test(NAME chunk_lighting COMMAND ChunkLightingTests)
+  add_executable(BlockPropertiesTests tests/BlockPropertiesTests.cpp src/world/BlockProperties.cpp)
+  target_include_directories(BlockPropertiesTests PRIVATE src)
+  add_test(NAME block_properties COMMAND BlockPropertiesTests)
+  add_executable(MiningProgressTests tests/MiningProgressTests.cpp src/world/BlockProperties.cpp)
+  target_include_directories(MiningProgressTests PRIVATE src)
+  target_link_libraries(MiningProgressTests PRIVATE glm::glm)
+  add_test(NAME mining_progress COMMAND MiningProgressTests)
 endif()

@@ -17,7 +17,7 @@ Run `Minecraft` from the build output directory.
 
 - **WASD** move, **Space/Left Shift** fly up/down
 - **Mouse** look, **scroll** changes field of view
-- **Left click** breaks a block
+- **Hold left click** mines a block; harder materials take longer
 - **Right click** places the selected hotbar block on the selected face
 - **1–9** selects a hotbar slot
 - **F** toggles flying, **Escape** releases/captures the mouse

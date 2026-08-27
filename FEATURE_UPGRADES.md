@@ -22,3 +22,15 @@ The v1.3 lighting pass adds:
 - A 24-hour time readout in the existing bitmap HUD.
 
 Lighting remains fully procedural and introduces no external assets or dependencies.
+
+## v1.4
+
+The v1.4 block-variety and mining pass adds:
+
+- A central block-properties registry with per-material hardness and diggability.
+- Timed hold-to-mine interaction, including unbreakable bedrock.
+- A ten-stage procedural crack outline that strengthens as mining progresses.
+- OAK_LOG and GRAVEL alongside distinct STONE, COBBLESTONE, SAND, and GLASS materials.
+- Expanded procedural atlas and hotbar swatches for all ten block values.
+
+Mining progress resets when the mouse is released or the targeted block changes. The system remains tool-free for now and introduces no external assets or dependencies.
