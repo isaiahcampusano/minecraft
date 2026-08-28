@@ -1,6 +1,10 @@
 #include "PlayerCamera.h"
 #include "Player.h"
+#include "../utils/Raycaster.h"
+#include "../world/World.h"
 #include <glm/gtc/matrix_transform.hpp>
-glm::vec3 PlayerCamera::position(const Player&p)const{if(!thirdPerson)return p.eyePosition();glm::vec3 target=p.position+glm::vec3(0,1.15f,0);return target-p.forward()*5.f+p.right()*1.35f+glm::vec3(0,1.35f,0);}
-glm::vec3 PlayerCamera::direction(const Player&p)const{if(!thirdPerson)return p.forward();glm::vec3 target=p.position+glm::vec3(0,1.25f,0);return glm::normalize(target-position(p));}
-glm::mat4 PlayerCamera::view(const Player&p)const{return glm::lookAt(position(p),position(p)+direction(p),{0,1,0});}
+#include <algorithm>
+glm::vec3 PlayerCamera::desiredPosition(const Player&p)const{if(!thirdPerson)return p.eyePosition();const glm::vec3 pivot=p.position+glm::vec3(0,1.15f,0);return pivot-p.forward()*5.f+p.right()*1.35f+glm::vec3(0,1.35f,0);}
+glm::vec3 PlayerCamera::position(const Player&p,const World&w)const{if(!thirdPerson)return p.eyePosition();const glm::vec3 pivot=p.position+glm::vec3(0,1.15f,0),desired=desiredPosition(p),offset=desired-pivot;const float desiredDistance=glm::length(offset);if(desiredDistance<=0.f)return pivot;const glm::vec3 rayDirection=offset/desiredDistance;const RayHit hit=Raycaster::cast(w,pivot,rayDirection,desiredDistance);if(!hit.hit)return desired;constexpr float surfaceBuffer=.2f;return pivot+rayDirection*std::max(0.f,hit.distance-surfaceBuffer);}
+glm::vec3 PlayerCamera::direction(const Player&p,const glm::vec3&cameraPosition)const{if(!thirdPerson)return p.forward();const glm::vec3 target=p.position+glm::vec3(0,1.25f,0);return glm::normalize(target-cameraPosition);}
+glm::mat4 PlayerCamera::view(const Player&p,const glm::vec3&cameraPosition)const{return glm::lookAt(cameraPosition,cameraPosition+direction(p,cameraPosition),{0,1,0});}

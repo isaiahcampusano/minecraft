@@ -19,7 +19,7 @@ add_executable(Minecraft
   src/main.cpp
   src/core/Application.cpp src/core/Camera.cpp src/core/Shader.cpp src/core/DayNightCycle.cpp src/core/SaveLoad.cpp src/core/GameState.cpp
   src/player/Player.cpp src/player/PlayerPhysics.cpp src/player/PlayerCamera.cpp src/player/PlayerAnimator.cpp src/player/Inventory.cpp src/player/CraftingRecipe.cpp
-  src/renderer/Mesh.cpp src/renderer/Renderer.cpp src/renderer/Texture.cpp src/renderer/CuboidMesh.cpp src/renderer/PlayerRenderer.cpp
+  src/renderer/Mesh.cpp src/renderer/Renderer.cpp src/renderer/Texture.cpp src/renderer/CuboidMesh.cpp src/renderer/PlayerRenderer.cpp src/renderer/ParticleSystem.cpp
   src/world/Chunk.cpp src/world/World.cpp src/world/WorldGenerator.cpp src/world/BlockProperties.cpp
   src/utils/Raycaster.cpp)
 target_include_directories(Minecraft PRIVATE src)
@@ -92,4 +92,11 @@ if(BUILD_TESTING)
   target_include_directories(ToolTierTests PRIVATE src)
   target_link_libraries(ToolTierTests PRIVATE glm::glm)
   add_test(NAME tool_tiers COMMAND ToolTierTests)
+  add_executable(PlayerCameraTests
+    tests/PlayerCameraTests.cpp src/player/PlayerCamera.cpp src/player/Player.cpp src/player/PlayerPhysics.cpp
+    src/utils/Raycaster.cpp src/world/World.cpp src/world/WorldGenerator.cpp src/world/Chunk.cpp
+    src/renderer/Mesh.cpp src/core/Shader.cpp)
+  target_include_directories(PlayerCameraTests PRIVATE src)
+  target_link_libraries(PlayerCameraTests PRIVATE glad_gl_core_33 glm::glm)
+  add_test(NAME player_camera COMMAND PlayerCameraTests)
 endif()

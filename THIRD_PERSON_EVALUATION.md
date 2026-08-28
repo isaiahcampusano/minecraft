@@ -42,6 +42,7 @@ The tests verify:
 - [ ] `F5` switches between first and third person.
 - [ ] First person does not render the body into the camera.
 - [ ] Third person shows the complete model from an offset angle.
+- [ ] Camera does not render inside or through solid geometry when the player is against a wall, under a low ceiling, or standing at map edges in third person.
 - [ ] WASD, sprint, jump, flight, collision, and holes still work.
 - [ ] Block targeting, breaking, placement, HUD, fog, and world rendering still work.
 
