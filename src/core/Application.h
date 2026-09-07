@@ -4,6 +4,9 @@
 #include "../player/Player.h"
 #include "../player/PlayerCamera.h"
 #include "../player/Inventory.h"
+#include "../player/SprintState.h"
+#include "../player/EatingState.h"
+#include "../world/LootTable.h"
 #include "DayNightCycle.h"
 #include "BreakMode.h"
 #include <GLFW/glfw3.h>
@@ -15,11 +18,13 @@ public:
 private:
   GLFWwindow* m_window=nullptr; Player m_player; PlayerCamera m_camera; World m_world; Inventory m_inventory; DayNightCycle m_dayNight; std::unique_ptr<Renderer> m_renderer;
   bool m_captured=true,m_firstMouse=true,m_inventoryOpen=false,m_tableOpen=false;
-  BreakModeState m_breakMode; bool m_leftMouseWasDown=false,m_semiAutoMiningActive=false;
+  BreakModeState m_breakMode; SprintState m_sprint; EatingState m_eating; LootTable m_loot; bool m_leftMouseWasDown=false,m_semiAutoMiningActive=false;
   double m_lastX=0,m_lastY=0; float m_clickCooldown=0; int m_creativePage=0;
   void setInventoryOpen(bool open,bool table=false);
   void input(float dt);
   void updateMining(float dt);
+  void updateEating(float dt);
+  void respawnPlayer();
   void saveGameState()const;
   void loadGameState();
   static void cursor(GLFWwindow*,double,double); static void scroll(GLFWwindow*,double,double); static void mouseButton(GLFWwindow*,int,int,int); static void key(GLFWwindow*,int,int,int,int);

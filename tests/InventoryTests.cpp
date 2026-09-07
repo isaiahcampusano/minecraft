@@ -1,5 +1,6 @@
 #include "player/Inventory.h"
 #include "world/BlockRegistry.h"
+#include "player/CreativeCatalog.h"
 #include <array>
 #include <iostream>
 
@@ -32,6 +33,7 @@ int main() {
   std::array<bool,BLOCK_TYPE_COUNT> seen{};std::size_t creativeCount=0;
   for(BlockType type:allPlaceableBlocks()){auto index=static_cast<std::size_t>(type);if(type==BlockType::AIR||index>=seen.size()||seen[index])return fail("creative block range is invalid");seen[index]=true;++creativeCount;}
   if(creativeCount!=BLOCK_TYPE_COUNT-1)return fail("creative range does not cover every non-air block");
+  if(creativeCatalog().size()!=BLOCK_TYPE_COUNT||creativeCatalog().back().kind!=ItemKind::FOOD||creativeCatalog().back().foodType!=FoodType::APPLE)return fail("creative catalog does not include apples");
   Inventory creative;
   if(!creative.giveCreative(BlockType::LEAVES)||creative.cursorStack().blockType!=BlockType::LEAVES||creative.cursorStack().count!=Inventory::CREATIVE_STACK_SIZE)return fail("creative give did not create a full LEAVES stack");
   creative.swapBackpack(0);
@@ -43,6 +45,8 @@ int main() {
   if(restoring.cursorStack().blockType!=BlockType::LEAVES||restoring.cursorStack().count!=Inventory::MAX_STACK_SIZE)return fail("restored cursor stack was not normalized");
   if(restoring.hotbarSlot(8).blockType!=BlockType::GLASS||restoring.hotbarSlot(8).count!=12||restoring.backpackSlot(26).blockType!=BlockType::COBBLESTONE||restoring.backpackSlot(26).count!=41)return fail("inventory slot setters did not restore stacks");
   restoring.setCursorStack(ItemStack::block(BlockType::AIR,4));if(restoring.cursorStack().blockType!=BlockType::AIR||restoring.cursorStack().count!=0)return fail("invalid restored stack was not cleared");
+  Inventory food;food.setHotbarSlot(0,ItemStack::food(FoodType::APPLE,63));if(!food.add(ItemStack::food(FoodType::APPLE,2))||food.hotbarSlot(0).count!=64||food.hotbarSlot(1).kind!=ItemKind::FOOD||food.hotbarSlot(1).count!=1)return fail("apple normalization or stacking failed");if(!food.consumeSelectedFood(FoodType::APPLE)||food.hotbarSlot(0).count!=63)return fail("selected apple was not consumed");food.setCursorStack(ItemStack::food(FoodType::APPLE,3));food.swapCraft(false,0);food.setCursorStack(ItemStack::food(FoodType::APPLE,2));food.swapCraft(true,0);food.setBackpackSlot(0,ItemStack::food(FoodType::APPLE,4));food.clear();if(!food.cursorStack().empty()||!food.hotbarSlot(0).empty()||!food.backpackSlot(0).empty()||!food.craftSlot(false,0).empty()||!food.craftSlot(true,0).empty()||food.selectedSlot()!=0)return fail("death inventory clearance was incomplete");
+  Inventory fullFood;for(int i=0;i<Inventory::HOTBAR_SLOTS;++i)fullFood.setHotbarSlot(i,ItemStack::block(types[static_cast<std::size_t>(i)],64));for(int i=0;i<Inventory::BACKPACK_SLOTS;++i)fullFood.setBackpackSlot(i,ItemStack::block(types[static_cast<std::size_t>(i%types.size())],64));if(fullFood.add(ItemStack::food(FoodType::APPLE)))return fail("apple was retained by a full inventory");
 
   inventory.select(-10); if (inventory.selectedSlot() != 0) return fail("negative selection was not clamped");
   inventory.select(99); if (inventory.selectedSlot() != Inventory::HOTBAR_SLOTS - 1) return fail("high selection was not clamped");

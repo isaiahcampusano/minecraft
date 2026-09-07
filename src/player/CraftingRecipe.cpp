@@ -13,7 +13,7 @@ bool matches(const ItemStack& stack,const RecipeIngredient& ingredient){
 bool stackableWith(const ItemStack& a,const ItemStack& b){
   if(a.empty())return true;
   if(a.kind!=b.kind||a.kind==ItemKind::TOOL)return false;
-  return a.kind==ItemKind::BLOCK?a.blockType==b.blockType:a.materialType==b.materialType;
+  return sameItemType(a,b);
 }
 CraftingRecipe shaped(int width,int height,std::initializer_list<RecipeIngredient> ingredients,const ItemStack& output){
   CraftingRecipe recipe;recipe.width=width;recipe.height=height;recipe.output=output;std::copy(ingredients.begin(),ingredients.end(),recipe.grid.begin());return recipe;

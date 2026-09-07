@@ -18,7 +18,7 @@ glad_add_library(glad_gl_core_33 REPRODUCIBLE API gl:core=3.3)
 add_executable(Minecraft
   src/main.cpp
   src/core/Application.cpp src/core/Camera.cpp src/core/Shader.cpp src/core/DayNightCycle.cpp src/core/SaveLoad.cpp src/core/GameState.cpp
-  src/player/Player.cpp src/player/PlayerPhysics.cpp src/player/PlayerCamera.cpp src/player/PlayerAnimator.cpp src/player/Inventory.cpp src/player/CraftingRecipe.cpp
+  src/player/Player.cpp src/player/PlayerPhysics.cpp src/player/PlayerCamera.cpp src/player/PlayerAnimator.cpp src/player/Inventory.cpp src/player/CraftingRecipe.cpp src/player/SurvivalState.cpp
   src/renderer/Mesh.cpp src/renderer/Renderer.cpp src/renderer/Texture.cpp src/renderer/CuboidMesh.cpp src/renderer/PlayerRenderer.cpp src/renderer/ParticleSystem.cpp
   src/world/Chunk.cpp src/world/World.cpp src/world/WorldGenerator.cpp src/world/BlockProperties.cpp
   src/utils/Raycaster.cpp)
@@ -35,7 +35,7 @@ include(CTest)
 if(BUILD_TESTING)
   add_executable(PlayerPhysicsTests
     tests/PlayerPhysicsTests.cpp
-    src/player/Player.cpp src/player/PlayerPhysics.cpp
+    src/player/Player.cpp src/player/PlayerPhysics.cpp src/player/SurvivalState.cpp
     src/world/World.cpp src/world/WorldGenerator.cpp src/world/Chunk.cpp
     src/renderer/Mesh.cpp src/core/Shader.cpp)
   target_include_directories(PlayerPhysicsTests PRIVATE src)
@@ -83,7 +83,7 @@ if(BUILD_TESTING)
   target_include_directories(SaveLoadTests PRIVATE src)
   add_test(NAME save_load COMMAND SaveLoadTests)
   add_executable(GameStateTests
-    tests/GameStateTests.cpp src/core/GameState.cpp src/player/Inventory.cpp src/player/CraftingRecipe.cpp
+    tests/GameStateTests.cpp src/core/GameState.cpp src/player/Inventory.cpp src/player/CraftingRecipe.cpp src/player/Player.cpp src/player/PlayerPhysics.cpp src/player/SurvivalState.cpp
     src/world/World.cpp src/world/WorldGenerator.cpp src/world/Chunk.cpp src/renderer/Mesh.cpp src/core/Shader.cpp)
   target_include_directories(GameStateTests PRIVATE src)
   target_link_libraries(GameStateTests PRIVATE glad_gl_core_33 glm::glm)
@@ -96,10 +96,22 @@ if(BUILD_TESTING)
   target_link_libraries(ToolTierTests PRIVATE glm::glm)
   add_test(NAME tool_tiers COMMAND ToolTierTests)
   add_executable(PlayerCameraTests
-    tests/PlayerCameraTests.cpp src/player/PlayerCamera.cpp src/player/Player.cpp src/player/PlayerPhysics.cpp
+    tests/PlayerCameraTests.cpp src/player/PlayerCamera.cpp src/player/Player.cpp src/player/PlayerPhysics.cpp src/player/SurvivalState.cpp
     src/utils/Raycaster.cpp src/world/World.cpp src/world/WorldGenerator.cpp src/world/Chunk.cpp
     src/renderer/Mesh.cpp src/core/Shader.cpp)
   target_include_directories(PlayerCameraTests PRIVATE src)
   target_link_libraries(PlayerCameraTests PRIVATE glad_gl_core_33 glm::glm)
   add_test(NAME player_camera COMMAND PlayerCameraTests)
+  add_executable(SurvivalTests tests/SurvivalTests.cpp src/player/SurvivalState.cpp)
+  target_include_directories(SurvivalTests PRIVATE src)
+  add_test(NAME survival COMMAND SurvivalTests)
+  add_executable(SprintStateTests tests/SprintStateTests.cpp)
+  target_include_directories(SprintStateTests PRIVATE src)
+  add_test(NAME sprint_state COMMAND SprintStateTests)
+  add_executable(EatingStateTests tests/EatingStateTests.cpp)
+  target_include_directories(EatingStateTests PRIVATE src)
+  add_test(NAME eating_state COMMAND EatingStateTests)
+  add_executable(LootTableTests tests/LootTableTests.cpp)
+  target_include_directories(LootTableTests PRIVATE src)
+  add_test(NAME loot_table COMMAND LootTableTests)
 endif()

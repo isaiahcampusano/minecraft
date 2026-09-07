@@ -81,3 +81,15 @@ The v1.8 crafting and tool-progression pass adds:
 - The versioned `MCv2` save format, which round-trips tagged inventory items and deliberately rejects older `MCv1` saves.
 
 Crafting tables stay open until the inventory is closed with E or Escape; distance checks and automatic closing when the player walks away remain future work. Iron/diamond tiers, ores, smelting, enchanting, and tool repair remain out of scope.
+
+## v2.0
+
+The v2.0 sprint and survival pass adds:
+
+- Toggle and double-tap sprint controls with forward-movement and hunger gating, displacement-based exhaustion, and smooth sprint FOV feedback.
+- Health, hunger, saturation, cumulative exhaustion, natural regeneration, starvation, fall damage, death, and safe respawning.
+- Apples as a food item, a deterministic 5% leaf-drop chance, food-aware stacking and creative-catalog support, and cancelable 1.6-second eating.
+- Ten-heart and ten-hunger HUD meters with full, half, and empty states, plus an explicit sprint status line.
+- The `MCv3` save format for food and survival state, with strict atomic validation and automatic `MCv2` migration.
+
+Death clears the hotbar, backpack, cursor stack, and both crafting inputs without creating dropped item entities. World edits remain intact. Saturation is deliberately hidden, and mobs, combat, armor, drowning, farming, extra foods, difficulty settings, and multiplayer remain outside this release.

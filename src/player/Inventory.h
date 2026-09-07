@@ -12,6 +12,7 @@ public:
   bool add(BlockType type);
   bool add(const ItemStack& stack);
   bool consumeSelected();
+  bool consumeSelectedFood(FoodType type);
   BlockType selectedType() const;
   const ItemStack& selectedStack() const { return m_hotbar[m_selected]; }
   void select(int slot);
@@ -28,6 +29,8 @@ public:
   ItemStack craftingOutput(bool table)const;
   bool damageSelectedTool();
   bool giveCreative(BlockType type);
+  bool giveCreative(const ItemStack& stack);
+  void clear();
   void setCursorStack(const ItemStack& stack);
   void setHotbarSlot(int i,const ItemStack& stack);
   void setBackpackSlot(int i,const ItemStack& stack);
