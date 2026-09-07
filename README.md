@@ -25,7 +25,7 @@ Run `Minecraft` from the build output directory.
 - **1–9** selects a hotbar slot
 - **E** opens the backpack, 2×2 personal crafting grid, and creative block palette; click slots to swap stacks and scroll to change palette pages
 - **Right click a crafting table** opens its 3×3 crafting grid
-- **G** toggles full-auto breaking; while enabled, holding left click continues into the next targeted block
+- **G** toggles the HUD break mode between **SINGLE** and **FULL AUTO**; in full-auto, holding left click continues into the next targeted block after a short 120 ms cooldown
 - **F** toggles flying, **Escape** releases/captures the mouse
 - **Space** jumps while grounded; **F5** switches first/third person
 

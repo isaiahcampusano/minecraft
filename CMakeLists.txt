@@ -66,6 +66,9 @@ if(BUILD_TESTING)
   target_include_directories(MiningProgressTests PRIVATE src)
   target_link_libraries(MiningProgressTests PRIVATE glm::glm)
   add_test(NAME mining_progress COMMAND MiningProgressTests)
+  add_executable(BreakModeTests tests/BreakModeTests.cpp)
+  target_include_directories(BreakModeTests PRIVATE src)
+  add_test(NAME break_mode COMMAND BreakModeTests)
   add_executable(WorldPersistenceTests
     tests/WorldPersistenceTests.cpp src/world/World.cpp src/world/WorldGenerator.cpp src/world/Chunk.cpp
     src/renderer/Mesh.cpp src/core/Shader.cpp)
