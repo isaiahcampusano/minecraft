@@ -15,3 +15,4 @@ BlockType miningDrop(BlockType mined);
 bool toolMatches(const ItemStack& held,const BlockProperties& properties);
 float miningSpeedMultiplier(const ItemStack& held,const BlockProperties& properties);
 bool canDropBlock(const ItemStack& held,const BlockProperties& properties);
+bool canDropBlock(BlockType mined,const ItemStack& held);

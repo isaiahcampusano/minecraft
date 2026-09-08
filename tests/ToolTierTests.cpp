@@ -10,9 +10,13 @@ namespace {int fail(const char* message){std::cerr<<message<<'\n';return 1;}bool
 int main(){
   const auto& stone=getBlockProperties(BlockType::STONE);ItemStack hand;
   if(canDropBlock(hand,stone))return fail("hand mining stone was allowed to drop an item");
+  if(canDropBlock(BlockType::STONE,hand))return fail("mining flow allowed a hand-mined stone drop");
+  if(canDropBlock(BlockType::LEAVES,hand))return fail("leaves dropped themselves without shears or silk touch");
+  if(!canDropBlock(BlockType::DIRT,hand))return fail("ordinary hand-mined blocks stopped dropping themselves");
   const ItemStack woodPick=ItemStack::tool(ToolKind::PICKAXE,ToolTier::WOOD,maxToolDurability(ToolTier::WOOD));
   const ItemStack stonePick=ItemStack::tool(ToolKind::PICKAXE,ToolTier::STONE,maxToolDurability(ToolTier::STONE));
-  if(!canDropBlock(woodPick,stone)||miningDrop(BlockType::STONE)!=BlockType::COBBLESTONE)return fail("wood pickaxe did not unlock the cobblestone drop");
+  if(canDropBlock(BlockType::LEAVES,woodPick))return fail("leaves dropped themselves with an unrelated tool");
+  if(!canDropBlock(BlockType::STONE,woodPick)||miningDrop(BlockType::STONE)!=BlockType::COBBLESTONE)return fail("wood pickaxe did not unlock the cobblestone drop");
   Player player;player.setMiningTarget({1,2,3});for(int i=0;i<120;++i)player.advanceMining(BlockType::STONE,Player::MINING_FIXED_STEP,hand);if(!near(player.blockBreakProgress,.25f))return fail("hand mining speed changed");
   player.clearMiningTarget();player.setMiningTarget({1,2,3});for(int i=0;i<120;++i)player.advanceMining(BlockType::STONE,Player::MINING_FIXED_STEP,woodPick);if(!near(player.blockBreakProgress,.5f))return fail("wood pickaxe was not twice hand speed");
   player.clearMiningTarget();player.setMiningTarget({1,2,3});for(int i=0;i<120;++i)player.advanceMining(BlockType::STONE,Player::MINING_FIXED_STEP,stonePick);if(!near(player.blockBreakProgress,.75f))return fail("stone pickaxe was not faster than wood");

@@ -24,6 +24,7 @@ BlockType miningDrop(BlockType mined){return mined==BlockType::STONE?BlockType::
 bool toolMatches(const ItemStack& held,const BlockProperties& properties){return properties.effectiveTool&&held.kind==ItemKind::TOOL&&!held.empty()&&held.toolKind==*properties.effectiveTool;}
 float miningSpeedMultiplier(const ItemStack& held,const BlockProperties& properties){if(!toolMatches(held,properties))return 1.f;return held.toolTier==ToolTier::STONE?3.f:2.f;}
 bool canDropBlock(const ItemStack& held,const BlockProperties& properties){return !properties.minTierToDrop||(toolMatches(held,properties)&&static_cast<std::uint8_t>(held.toolTier)>=static_cast<std::uint8_t>(*properties.minTierToDrop));}
+bool canDropBlock(BlockType mined,const ItemStack& held){return mined!=BlockType::LEAVES&&canDropBlock(held,getBlockProperties(mined));}
 
 const BlockProperties& getBlockProperties(BlockType type){
   auto index=static_cast<std::size_t>(type);
