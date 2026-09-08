@@ -15,11 +15,17 @@ public:
   void computeSkyLight(const std::function<BlockType(int,int,int)>& worldBlock);
   std::uint8_t skyLight(int x,int y,int z)const;
   void generateMesh(const std::function<BlockType(int,int,int)>& worldBlock);
-  void render()const{m_mesh.render();}
-  bool dirty()const{return m_dirty;} void markDirty(){m_dirty=true;}
+  void render()const{if(m_ready)m_mesh.render();}
+  bool ready()const{return m_ready;}
+  bool meshDirty()const{return m_meshDirty;}
+  bool lightingDirty()const{return m_lightingDirty;}
+  bool dirty()const{return m_meshDirty||m_lightingDirty;}
+  void markDirty(){m_meshDirty=true;}
+  void markLightingDirty(){m_lightingDirty=true;m_meshDirty=true;}
   glm::ivec2 position()const{return m_position;}
 private:
-  glm::ivec2 m_position; std::array<BlockType,COUNT> m_blocks{}; std::array<std::uint8_t,COUNT> m_skyLight{}; Mesh m_mesh; bool m_dirty=true;
+  glm::ivec2 m_position; std::array<BlockType,COUNT> m_blocks{}; std::array<std::uint8_t,COUNT> m_skyLight{}; Mesh m_mesh;
+  bool m_ready=false,m_meshDirty=true,m_lightingDirty=true;
   static int index(int x,int y,int z){return(y*SIZE_Z+z)*SIZE_X+x;}
 };
 

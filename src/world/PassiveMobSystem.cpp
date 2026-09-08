@@ -3,6 +3,7 @@
 #include "Pathfinder.h"
 #include "World.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
 #include <unordered_set>
@@ -35,7 +36,7 @@ bool PassiveMobSystem::findSpawnPosition(World& world,const glm::vec3& playerPos
 
 bool PassiveMobSystem::spawnPack(MobType type,World& world,const glm::vec3& playerPosition,float daylight,std::size_t limit){if(m_mobs.size()>=GLOBAL_CAP||nearbyCount(playerPosition)>=LOCAL_CAP||limit==0)return false;glm::ivec3 base;if(!findSpawnPosition(world,playerPosition,daylight,base))return false;const int requested=randomInt(1,4);int spawned=0;for(int member=0;member<requested&&static_cast<std::size_t>(spawned)<limit&&m_mobs.size()<GLOBAL_CAP&&nearbyCount(playerPosition)<LOCAL_CAP;++member){glm::ivec3 feet=base;if(member>0){feet.x+=randomInt(-3,3);feet.z+=randomInt(-3,3);const glm::vec2 offset{feet.x+.5f-playerPosition.x,feet.z+.5f-playerPosition.z};const float distanceSquared=glm::dot(offset,offset);if(distanceSquared<16.f*16.f||distanceSquared>48.f*48.f)continue;const int groundY=surfaceY(world,feet.x,feet.z);if(groundY<0)continue;feet.y=groundY+1;if(!canSpawnAt(world,feet,daylight))continue;}addMob(type,glm::vec3(feet.x+.5f,static_cast<float>(feet.y),feet.z+.5f),member>0&&randomInt(0,99)<15);++spawned;}return spawned>0;}
 
-void PassiveMobSystem::initialize(World& world,const glm::vec3& playerPosition,float daylight){if(m_initialized||daylight<.45f)return;m_initialized=true;for(int type=0;type<static_cast<int>(MobType::COUNT);++type)for(int attempt=0;attempt<8&&!spawnPack(static_cast<MobType>(type),world,playerPosition,daylight,1);++attempt){}while(m_mobs.size()<TARGET_NEARBY){const auto before=m_mobs.size();spawnPack(static_cast<MobType>(randomInt(0,static_cast<int>(MobType::COUNT)-1)),world,playerPosition,daylight,TARGET_NEARBY-m_mobs.size());if(m_mobs.size()==before)break;}}
+void PassiveMobSystem::initialize(World& world,const glm::vec3& playerPosition,float daylight){if(m_initialized||daylight<.45f)return;std::array<bool,static_cast<std::size_t>(MobType::COUNT)> present{};for(const auto& mob:m_mobs)present[static_cast<std::size_t>(mob.type)]=true;for(int type=0;type<static_cast<int>(MobType::COUNT);++type)if(!present[static_cast<std::size_t>(type)])for(int attempt=0;attempt<8&&!spawnPack(static_cast<MobType>(type),world,playerPosition,daylight,1);++attempt){}present.fill(false);for(const auto& mob:m_mobs)present[static_cast<std::size_t>(mob.type)]=true;if(std::any_of(present.begin(),present.end(),[](bool value){return!value;}))return;while(m_mobs.size()<TARGET_NEARBY){const auto before=m_mobs.size();spawnPack(static_cast<MobType>(randomInt(0,static_cast<int>(MobType::COUNT)-1)),world,playerPosition,daylight,TARGET_NEARBY-m_mobs.size());if(m_mobs.size()==before)break;}m_initialized=true;}
 
 bool PassiveMobSystem::active(const PassiveMob& mob,const World& world,const glm::vec3& playerPosition)const{return world.isChunkLoadedAt(static_cast<int>(std::floor(mob.position.x)),static_cast<int>(std::floor(mob.position.z)))&&glm::distance(mob.position,playerPosition)<=ACTIVE_DISTANCE;}
 

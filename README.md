@@ -17,6 +17,7 @@ Streams 16×256×16 chunks over a finite 1000×1000 world with varied superflat 
 - **Survival** — 20 health, 20 hunger, and 5 hidden saturation. Sprinting and jumping build exhaustion (consumes saturation first). Apples restore 4 hunger and 2.4 saturation. Natural healing at ≥18 hunger; starvation deals damage at 0 hunger. Falls over 3 blocks deal damage. Death clears inventory (world edits persist) and respawns you near world center.
 - **Inventory & Crafting** — 27-slot backpack, 2×2 personal crafting grid, creative block palette, and crafting table support for 3×3 recipes. Logs → planks → sticks/crafting tables → wooden and stone tools.
 - **Day-Night Cycle** — procedural 12‑minute cycle changes sky, fog, and terrain lighting; propagated skylight darkens holes, overhangs, and covered blocks.
+- **Smooth Chunk Streaming** — terrain generation, lighting, and mesh uploads are deferred across frames and processed nearest-first. Unchanged lighting is reused, and existing meshes remain visible while edits rebuild.
 - **Persistence** — world edits, inventory, survival state, and passive mobs save on exit. New saves use `MCv4`; existing `MCv2`/`MCv3` saves migrate automatically.
 - **Texture Atlas** — generated in memory; no external asset files required.
 
