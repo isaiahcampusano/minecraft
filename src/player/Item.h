@@ -3,10 +3,10 @@
 #include <cstdint>
 
 enum class ItemKind : std::uint8_t { BLOCK, MATERIAL, TOOL, FOOD };
-enum class MaterialType : std::uint8_t { STICK, COUNT };
+enum class MaterialType : std::uint8_t { STICK, LEATHER, WHITE_WOOL, COUNT };
 enum class ToolKind : std::uint8_t { PICKAXE, AXE, SHOVEL, SWORD, HOE, COUNT };
 enum class ToolTier : std::uint8_t { WOOD, STONE, COUNT };
-enum class FoodType : std::uint8_t { APPLE, COUNT };
+enum class FoodType : std::uint8_t { APPLE, RAW_BEEF, RAW_PORKCHOP, RAW_MUTTON, COUNT };
 
 struct ItemStack {
   ItemKind kind = ItemKind::BLOCK;

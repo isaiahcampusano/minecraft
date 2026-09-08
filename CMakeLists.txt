@@ -19,8 +19,8 @@ add_executable(Minecraft
   src/main.cpp
   src/core/Application.cpp src/core/Camera.cpp src/core/Shader.cpp src/core/DayNightCycle.cpp src/core/SaveLoad.cpp src/core/GameState.cpp
   src/player/Player.cpp src/player/PlayerPhysics.cpp src/player/PlayerCamera.cpp src/player/PlayerAnimator.cpp src/player/Inventory.cpp src/player/CraftingRecipe.cpp src/player/SurvivalState.cpp
-  src/renderer/Mesh.cpp src/renderer/Renderer.cpp src/renderer/Texture.cpp src/renderer/CuboidMesh.cpp src/renderer/PlayerRenderer.cpp src/renderer/ParticleSystem.cpp src/renderer/DropSystem.cpp
-  src/world/Chunk.cpp src/world/World.cpp src/world/WorldGenerator.cpp src/world/BlockProperties.cpp
+  src/renderer/Mesh.cpp src/renderer/Renderer.cpp src/renderer/Texture.cpp src/renderer/CuboidMesh.cpp src/renderer/PlayerRenderer.cpp src/renderer/MobRenderer.cpp src/renderer/ParticleSystem.cpp src/renderer/DropSystem.cpp
+  src/world/Chunk.cpp src/world/World.cpp src/world/WorldGenerator.cpp src/world/BlockProperties.cpp src/world/Pathfinder.cpp src/world/PassiveMobSystem.cpp
   src/utils/Raycaster.cpp)
 target_include_directories(Minecraft PRIVATE src)
 target_link_libraries(Minecraft PRIVATE glfw glad_gl_core_33 glm::glm)
@@ -81,10 +81,11 @@ if(BUILD_TESTING)
   add_test(NAME world_generator COMMAND WorldGeneratorTests)
   add_executable(SaveLoadTests tests/SaveLoadTests.cpp src/core/SaveLoad.cpp)
   target_include_directories(SaveLoadTests PRIVATE src)
+  target_link_libraries(SaveLoadTests PRIVATE glm::glm)
   add_test(NAME save_load COMMAND SaveLoadTests)
   add_executable(GameStateTests
     tests/GameStateTests.cpp src/core/GameState.cpp src/player/Inventory.cpp src/player/CraftingRecipe.cpp src/player/Player.cpp src/player/PlayerPhysics.cpp src/player/SurvivalState.cpp
-    src/world/World.cpp src/world/WorldGenerator.cpp src/world/Chunk.cpp src/renderer/Mesh.cpp src/core/Shader.cpp)
+    src/world/World.cpp src/world/WorldGenerator.cpp src/world/Chunk.cpp src/world/Pathfinder.cpp src/world/PassiveMobSystem.cpp src/renderer/Mesh.cpp src/core/Shader.cpp)
   target_include_directories(GameStateTests PRIVATE src)
   target_link_libraries(GameStateTests PRIVATE glad_gl_core_33 glm::glm)
   add_test(NAME game_state COMMAND GameStateTests)
@@ -113,5 +114,14 @@ if(BUILD_TESTING)
   add_test(NAME eating_state COMMAND EatingStateTests)
   add_executable(LootTableTests tests/LootTableTests.cpp)
   target_include_directories(LootTableTests PRIVATE src)
+  target_link_libraries(LootTableTests PRIVATE glm::glm)
   add_test(NAME loot_table COMMAND LootTableTests)
+  add_executable(PathfinderTests tests/PathfinderTests.cpp src/world/Pathfinder.cpp src/world/World.cpp src/world/WorldGenerator.cpp src/world/Chunk.cpp src/renderer/Mesh.cpp src/core/Shader.cpp)
+  target_include_directories(PathfinderTests PRIVATE src)
+  target_link_libraries(PathfinderTests PRIVATE glad_gl_core_33 glm::glm)
+  add_test(NAME pathfinder COMMAND PathfinderTests)
+  add_executable(PassiveMobTests tests/PassiveMobTests.cpp src/world/PassiveMobSystem.cpp src/world/Pathfinder.cpp src/world/World.cpp src/world/WorldGenerator.cpp src/world/Chunk.cpp src/renderer/Mesh.cpp src/core/Shader.cpp)
+  target_include_directories(PassiveMobTests PRIVATE src)
+  target_link_libraries(PassiveMobTests PRIVATE glad_gl_core_33 glm::glm)
+  add_test(NAME passive_mobs COMMAND PassiveMobTests)
 endif()

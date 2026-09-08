@@ -9,8 +9,11 @@ class World {
 public:
   struct EditEntry{int x,y,z;BlockType type;};
   void update(const glm::vec3& player);
+  void updateLighting();
   void render()const;
   BlockType getBlock(int x,int y,int z)const;
+  std::uint8_t skyLight(int x,int y,int z)const;
+  bool isChunkLoadedAt(int x,int z)const;
   bool setBlock(int x,int y,int z,BlockType type);
   void loadChunk(int cx,int cz);
   bool unloadChunk(int cx,int cz);

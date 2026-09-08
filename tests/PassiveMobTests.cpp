@@ -1,0 +1,25 @@
+#include "world/PassiveMobSystem.h"
+#include "world/LootTable.h"
+#include "world/World.h"
+#include "player/ToolRegistry.h"
+#include <array>
+#include <iostream>
+
+namespace{
+int fail(const char* message){std::cerr<<message<<'\n';return 1;}
+void flatten(World& world,int centerX,int centerZ,int radius){for(int z=centerZ-radius;z<=centerZ+radius;++z)for(int x=centerX-radius;x<=centerX+radius;++x){world.setBlock(x,6,z,BlockType::GRASS);world.setBlock(x,7,z,BlockType::AIR);world.setBlock(x,8,z,BlockType::AIR);}}
+glm::ivec3 findGrass(World& world){for(int z=460;z<=540;++z)for(int x=460;x<=540;++x)if(world.getBlock(x,6,z)==BlockType::GRASS&&world.skyLight(x,7,z)>=9)return{x,7,z};return{-1,-1,-1};}
+}
+
+int main(){
+  if(mobMaxHealth(MobType::COW)!=10||mobMaxHealth(MobType::PIG)!=10||mobMaxHealth(MobType::SHEEP)!=8)return fail("species health values were wrong");
+  const ItemStack woodSword=ItemStack::tool(ToolKind::SWORD,ToolTier::WOOD,maxToolDurability(ToolTier::WOOD)),stoneSword=ItemStack::tool(ToolKind::SWORD,ToolTier::STONE,maxToolDurability(ToolTier::STONE)),stoneAxe=ItemStack::tool(ToolKind::AXE,ToolTier::STONE,maxToolDurability(ToolTier::STONE));if(PassiveMobSystem::attackDamage({})!=1||PassiveMobSystem::attackDamage(woodSword)!=4||PassiveMobSystem::attackDamage(stoneSword)!=5||PassiveMobSystem::attackDamage(stoneAxe)!=4)return fail("attack damage table was wrong");
+  PassiveMobSystem targeting(1);const auto cowId=targeting.addMob(MobType::COW,{500.5f,7.f,496.f}).id;const auto pigId=targeting.addMob(MobType::PIG,{500.5f,7.f,498.f}).id;const MobHit hit=targeting.raycast({500.5f,7.7f,500.5f},{0,0,-1});if(!hit.hit||hit.id!=pigId||hit.id==cowId)return fail("raycast did not select the nearest mob hitbox");
+  LootTable loot(9);std::vector<ItemStack> drops;if(!targeting.damage(pigId,10,{500.5f,7.f,500.5f},loot,[&](const glm::vec3&,const ItemStack& stack){drops.push_back(stack);})||drops.size()!=1||drops[0].foodType!=FoodType::RAW_PORKCHOP)return fail("adult pig death did not produce porkchops");const auto babyId=targeting.addMob(MobType::COW,{501.5f,7.f,498.f},true).id;drops.clear();if(!targeting.damage(babyId,10,{500,7,500},loot,[&](const glm::vec3&,const ItemStack& stack){drops.push_back(stack);})||!drops.empty())return fail("baby death produced loot");
+  World world;for(int z=28;z<=34;++z)for(int x=28;x<=34;++x)world.loadChunk(x,z);world.updateLighting();const glm::ivec3 grass=findGrass(world);if(grass.y<0)return fail("test world had no lit grass");PassiveMobSystem conditions(2);if(!conditions.canSpawnAt(world,grass,1.f)||conditions.canSpawnAt(world,grass,.2f))return fail("spawn light/day conditions were wrong");for(int i=0;i<4;++i)conditions.addMob(MobType::COW,{grass.x+.5f+i*.2f,static_cast<float>(grass.y),grass.z+.5f});if(conditions.canSpawnAt(world,grass,1.f))return fail("chunk or cluster spawn cap was ignored");
+  const glm::vec3 player{500.5f,8.f,500.5f};PassiveMobSystem spawning(1234);spawning.initialize(world,player,1.f);if(spawning.mobs().size()<3||spawning.mobs().size()>PassiveMobSystem::TARGET_NEARBY)return fail("initial population size was outside the sparse target");std::array<bool,static_cast<std::size_t>(MobType::COUNT)> species{};for(const auto& mob:spawning.mobs()){species[static_cast<std::size_t>(mob.type)]=true;const float distance=glm::length(glm::vec2{mob.position.x-player.x,mob.position.z-player.z});if(distance<16.f||distance>48.f)return fail("spawned mob was outside the 16-48 block radius");}for(bool present:species)if(!present)return fail("initial population did not include every species");
+  flatten(world,520,500,12);PassiveMobSystem behavior(4);auto& adult=behavior.addMob(MobType::SHEEP,{520.5f,7.f,500.5f});adult.stateTimer=10;auto& baby=behavior.addMob(MobType::SHEEP,{526.5f,7.f,500.5f},true);baby.aiTimer=0;behavior.update(.05f,world,{520.5f,8.f,500.5f},0.f);if(behavior.mobs()[1].state!=MobAIState::FOLLOWING_PARENT||behavior.mobs()[1].path.empty())return fail("baby did not pathfind toward its adult");
+  PassiveMobSystem grazing(5);auto& sheep=grazing.addMob(MobType::SHEEP,{520.5f,7.f,500.5f});sheep.state=MobAIState::GRAZING;sheep.stateTimer=.05f;sheep.target={520.5f,7.f,500.5f};sheep.path.clear();sheep.pathIndex=0;grazing.update(.05f,world,{520.5f,8.f,500.5f},0.f);if(world.getBlock(520,6,500)!=BlockType::DIRT)return fail("grazing sheep did not convert grass to dirt");if(!PassiveMobSystem::spreadGrassAt(world,{520,6,500})||world.getBlock(520,6,500)!=BlockType::GRASS)return fail("exposed dirt did not regenerate from adjacent grass");
+  PassiveMobSystem aging(6);auto& lamb=aging.addMob(MobType::SHEEP,{530.5f,7.f,500.5f},true);lamb.age=-.05f;aging.update(.05f,world,{530.5f,8.f,500.5f},0.f);if(aging.mobs()[0].isBaby())return fail("baby did not mature after its age timer elapsed");auto& fleeing=aging.addMob(MobType::COW,{532.5f,7.f,500.5f});if(!aging.damage(fleeing.id,1,{530.5f,7.f,500.5f},loot,{})||aging.mobs().back().state!=MobAIState::FLEEING||aging.mobs().back().stateTimer!=3.f)return fail("damaged mob did not enter fleeing state");
+  return 0;
+}

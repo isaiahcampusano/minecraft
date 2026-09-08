@@ -2,6 +2,7 @@
 #include "../utils/Raycaster.h"
 #include "../world/World.h"
 #include "PlayerRenderer.h"
+#include "MobRenderer.h"
 #include "../player/Player.h"
 #include "../player/Inventory.h"
 #include "../player/InventoryLayout.h"
@@ -53,9 +54,9 @@ std::array<unsigned char,7> glyph(char c){
 
 Renderer::Renderer():m_shader(VS,FS),m_colorShader(COLOR_VS,COLOR_FS),m_skyShader(SKY_VS,SKY_FS){
   glGenVertexArrays(1,&m_lineVao);glGenBuffers(1,&m_lineVbo);glBindVertexArray(m_lineVao);glBindBuffer(GL_ARRAY_BUFFER,m_lineVbo);glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,3*sizeof(float),nullptr);glEnableVertexAttribArray(0);
-  const float sky[]={-1,-1,1,-1,-1,1,1,1};glGenVertexArrays(1,&m_skyVao);glGenBuffers(1,&m_skyVbo);glBindVertexArray(m_skyVao);glBindBuffer(GL_ARRAY_BUFFER,m_skyVbo);glBufferData(GL_ARRAY_BUFFER,sizeof(sky),sky,GL_STATIC_DRAW);glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,2*sizeof(float),nullptr);glEnableVertexAttribArray(0);glBindVertexArray(0);m_playerRenderer=std::make_unique<PlayerRenderer>();
+  const float sky[]={-1,-1,1,-1,-1,1,1,1};glGenVertexArrays(1,&m_skyVao);glGenBuffers(1,&m_skyVbo);glBindVertexArray(m_skyVao);glBindBuffer(GL_ARRAY_BUFFER,m_skyVbo);glBufferData(GL_ARRAY_BUFFER,sizeof(sky),sky,GL_STATIC_DRAW);glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,2*sizeof(float),nullptr);glEnableVertexAttribArray(0);glBindVertexArray(0);m_playerRenderer=std::make_unique<PlayerRenderer>();m_mobRenderer=std::make_unique<MobRenderer>();
 }
-Renderer::~Renderer(){m_playerRenderer.reset();if(m_skyVbo)glDeleteBuffers(1,&m_skyVbo);if(m_skyVao)glDeleteVertexArrays(1,&m_skyVao);if(m_lineVbo)glDeleteBuffers(1,&m_lineVbo);if(m_lineVao)glDeleteVertexArrays(1,&m_lineVao);}
+Renderer::~Renderer(){m_mobRenderer.reset();m_playerRenderer.reset();if(m_skyVbo)glDeleteBuffers(1,&m_skyVbo);if(m_skyVao)glDeleteVertexArrays(1,&m_skyVao);if(m_lineVbo)glDeleteBuffers(1,&m_lineVbo);if(m_lineVao)glDeleteVertexArrays(1,&m_lineVao);}
 void Renderer::drawSky(const DayNightCycle& dayNight){glDisable(GL_DEPTH_TEST);m_skyShader.use();m_skyShader.setVec3("topColor",dayNight.skyTop());m_skyShader.setVec3("bottomColor",dayNight.skyBottom());glBindVertexArray(m_skyVao);glDrawArrays(GL_TRIANGLE_STRIP,0,4);glEnable(GL_DEPTH_TEST);}
 void Renderer::drawOutline(const RayHit& hit,const glm::mat4& view,const glm::mat4& projection){if(!hit.hit)return;constexpr float e=.002f;float x=hit.block.x-e,y=hit.block.y-e,z=hit.block.z-e,s=1.f+2*e;
   const float p[]={x,y,z,x+s,y,z, x+s,y,z,x+s,y+s,z, x+s,y+s,z,x,y+s,z, x,y+s,z,x,y,z,
@@ -90,4 +91,4 @@ void Renderer::drawOverlay(int width,int height,const std::string& text,const Pl
   for(int i=0;i<Inventory::HOTBAR_SLOTS;++i)drawSlot(startX+i*(InventoryLayout::SLOT_SIZE+InventoryLayout::GAP),InventoryLayout::HOTBAR_Y,inventory.hotbarSlot(i),i==inventory.selectedSlot());
   glEnable(GL_CULL_FACE);glEnable(GL_DEPTH_TEST);
 }
-void Renderer::draw(const World&w,const Player&player,bool showPlayer,float dt,const glm::mat4&v,const glm::mat4&p,const glm::vec3&camera,const RayHit&hit,int width,int height,const std::string&hud,const Inventory&inventory,bool inventoryOpen,bool tableOpen,int creativePage,const DayNightCycle&dayNight){drawSky(dayNight);m_shader.use();m_shader.setMat4("view",v);m_shader.setMat4("projection",p);m_shader.setInt("atlas",0);m_shader.setVec3("cameraPos",camera);m_shader.setVec3("fogColor",dayNight.skyBottom());m_shader.setFloat("daylight",dayNight.daylight());m_texture.bind();w.render();if(showPlayer)m_playerRenderer->draw(player,dt,v,p,camera,dayNight);m_particles.update(dt);m_particles.render(v,p,m_texture,dayNight.daylight());m_drops.render(v,p,m_texture,dayNight.daylight());drawOutline(hit,v,p);drawMiningCrack(player.targetedBlock,player.blockBreakProgress,v,p);drawOverlay(width,height,hud,player,inventory,inventoryOpen,tableOpen,creativePage);}
+void Renderer::draw(const World&w,const Player&player,const PassiveMobSystem&mobs,bool showPlayer,float dt,const glm::mat4&v,const glm::mat4&p,const glm::vec3&camera,const RayHit&hit,int width,int height,const std::string&hud,const Inventory&inventory,bool inventoryOpen,bool tableOpen,int creativePage,const DayNightCycle&dayNight){drawSky(dayNight);m_shader.use();m_shader.setMat4("view",v);m_shader.setMat4("projection",p);m_shader.setInt("atlas",0);m_shader.setVec3("cameraPos",camera);m_shader.setVec3("fogColor",dayNight.skyBottom());m_shader.setFloat("daylight",dayNight.daylight());m_texture.bind();w.render();if(showPlayer)m_playerRenderer->draw(player,dt,v,p,camera,dayNight);m_mobRenderer->draw(mobs,w,v,p,camera,dayNight);m_particles.update(dt);m_particles.render(v,p,m_texture,dayNight.daylight());m_drops.render(v,p,m_texture,dayNight.daylight());drawOutline(hit,v,p);drawMiningCrack(player.targetedBlock,player.blockBreakProgress,v,p);drawOverlay(width,height,hud,player,inventory,inventoryOpen,tableOpen,creativePage);}

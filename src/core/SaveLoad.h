@@ -1,5 +1,6 @@
 #pragma once
 #include "../player/Item.h"
+#include "../world/PassiveMob.h"
 #include <array>
 #include <cstdint>
 #include <filesystem>
@@ -18,11 +19,12 @@ struct SaveData {
   std::int32_t health=20,hunger=20;
   float saturation=5.f,exhaustion=0.f;
   std::vector<EditData> edits;
+  std::vector<MobData> mobs;
 };
 
 class SaveLoad {
 public:
-  static constexpr std::uint32_t VERSION=3;
+  static constexpr std::uint32_t VERSION=4;
   static bool save(const SaveData& data);
   static bool save(const SaveData& data,const std::filesystem::path& path);
   static bool load(SaveData& out);
