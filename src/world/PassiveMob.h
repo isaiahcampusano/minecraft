@@ -6,6 +6,8 @@
 
 using MobId=std::uint64_t;
 
+inline constexpr float MOB_STEP_HEIGHT=1.0f;
+
 enum class MobType:std::uint8_t{COW,PIG,SHEEP,COUNT};
 enum class MobAIState:std::uint8_t{IDLE,WANDERING,FOLLOWING_PARENT,GRAZING,FLEEING};
 

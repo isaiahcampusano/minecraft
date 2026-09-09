@@ -13,6 +13,31 @@ namespace{
 constexpr float BABY_AGE=-1200.f;
 float horizontalDistance(const glm::vec3& a,const glm::vec3& b){return glm::length(glm::vec2{a.x-b.x,a.z-b.z});}
 bool mobCollides(const PassiveMob& mob,const glm::vec3& position,const World& world){const float scale=mobScale(mob),halfWidth=mobWidth(mob.type)*scale*.5f,height=mobHeight(mob.type)*scale,e=.0001f;const glm::vec3 lo=position+glm::vec3(-halfWidth,0,-halfWidth),hi=position+glm::vec3(halfWidth,height,halfWidth);for(int y=static_cast<int>(std::floor(lo.y));y<=static_cast<int>(std::floor(hi.y-e));++y)for(int z=static_cast<int>(std::floor(lo.z));z<=static_cast<int>(std::floor(hi.z-e));++z)for(int x=static_cast<int>(std::floor(lo.x));x<=static_cast<int>(std::floor(hi.x-e));++x)if(isSolid(world.getBlock(x,y,z)))return true;return false;}
+// Clip an axis movement against every voxel crossed by the full mob box.
+// Endpoint-only checks can miss a ceiling when a small mob steps upward.
+float sweepMob(const PassiveMob& mob,glm::vec3& position,int axis,float distance,const World& world){
+  constexpr float epsilon=.0001f;
+  if(distance==0.f)return 0.f;
+  const float halfWidth=mobWidth(mob.type)*mobScale(mob)*.5f;
+  const glm::vec3 lo=position+glm::vec3(-halfWidth,0,-halfWidth);
+  const glm::vec3 hi=position+glm::vec3(halfWidth,mobHeight(mob.type)*mobScale(mob),halfWidth);
+  glm::vec3 sweptLo=lo,sweptHi=hi;
+  sweptLo[axis]+=std::min(0.f,distance);sweptHi[axis]+=std::max(0.f,distance);
+  float allowed=distance;
+  for(int y=static_cast<int>(std::floor(sweptLo.y+epsilon));y<=static_cast<int>(std::floor(sweptHi.y-epsilon));++y)
+    for(int z=static_cast<int>(std::floor(sweptLo.z+epsilon));z<=static_cast<int>(std::floor(sweptHi.z-epsilon));++z)
+      for(int x=static_cast<int>(std::floor(sweptLo.x+epsilon));x<=static_cast<int>(std::floor(sweptHi.x-epsilon));++x){
+        if(!isSolid(world.getBlock(x,y,z)))continue;
+        const glm::vec3 blockLo{x,y,z},blockHi=blockLo+glm::vec3(1.f);
+        if(distance>0.f&&blockLo[axis]>=hi[axis]-epsilon)
+          allowed=std::min(allowed,std::max(0.f,blockLo[axis]-hi[axis]));
+        else if(distance<0.f&&blockHi[axis]<=lo[axis]+epsilon)
+          allowed=std::max(allowed,std::min(0.f,blockHi[axis]-lo[axis]));
+      }
+  position[axis]+=allowed;
+  return allowed;
+}
+
 bool rayBox(const glm::vec3& origin,const glm::vec3& direction,const glm::vec3& low,const glm::vec3& high,float maxDistance,float& distance){float nearValue=0,farValue=maxDistance;for(int axis=0;axis<3;++axis){if(std::abs(direction[axis])<1e-6f){if(origin[axis]<low[axis]||origin[axis]>high[axis])return false;continue;}float first=(low[axis]-origin[axis])/direction[axis],second=(high[axis]-origin[axis])/direction[axis];if(first>second)std::swap(first,second);nearValue=std::max(nearValue,first);farValue=std::min(farValue,second);if(nearValue>farValue)return false;}distance=nearValue;return nearValue<=maxDistance&&farValue>=0;}
 }
 
@@ -50,9 +75,36 @@ void PassiveMobSystem::chooseFleePath(PassiveMob& mob,const World& world){glm::v
 
 void PassiveMobSystem::updateAI(PassiveMob& mob,World& world){if(mob.state==MobAIState::FLEEING){chooseFleePath(mob,world);return;}if(mob.isBaby()){followParent(mob,world);return;}if(mob.state==MobAIState::GRAZING)return;if(mob.type==MobType::SHEEP&&mob.grazeCooldown<=0&&randomInt(0,4)==0&&chooseGrass(mob,world))return;if(mob.state==MobAIState::IDLE&&mob.stateTimer<=0)chooseWander(mob,world);else if((mob.state==MobAIState::WANDERING||mob.state==MobAIState::FOLLOWING_PARENT)&&mob.pathIndex>=mob.path.size()){mob.state=MobAIState::IDLE;mob.stateTimer=2.f+random01()*3.f;mob.path.clear();}}
 
-void PassiveMobSystem::updateMovement(PassiveMob& mob,float dt,const World& world){glm::vec2 desired{0};if(mob.pathIndex<mob.path.size()){const glm::ivec3 node=mob.path[mob.pathIndex];const glm::vec3 point{node.x+.5f,static_cast<float>(node.y),node.z+.5f};glm::vec2 offset{point.x-mob.position.x,point.z-mob.position.z};if(glm::length(offset)<.25f&&std::abs(point.y-mob.position.y)<.65f){++mob.pathIndex;}else if(glm::dot(offset,offset)>.0001f){desired=glm::normalize(offset);if(point.y>mob.position.y+.35f&&mob.onGround)mob.velocity.y=6.f;}}
+void PassiveMobSystem::updateMovement(PassiveMob& mob,float dt,const World& world){glm::vec2 desired{0};if(mob.pathIndex<mob.path.size()){const glm::ivec3 node=mob.path[mob.pathIndex];const glm::vec3 point{node.x+.5f,static_cast<float>(node.y),node.z+.5f};glm::vec2 offset{point.x-mob.position.x,point.z-mob.position.z};if(glm::length(offset)<.25f&&std::abs(point.y-mob.position.y)<.65f){++mob.pathIndex;}else if(glm::dot(offset,offset)>.0001f){desired=glm::normalize(offset);}}
   const float baseSpeed=mob.type==MobType::PIG?1.35f:(mob.type==MobType::SHEEP?1.3f:1.25f),speed=(mob.state==MobAIState::FLEEING?2.2f:baseSpeed)*(mob.isBaby()?1.1f:1.f);mob.velocity.x=desired.x*speed;mob.velocity.z=desired.y*speed;mob.velocity.y=std::max(mob.velocity.y-20.f*dt,-30.f);if(glm::dot(desired,desired)>.01f)mob.yaw=std::atan2(-desired.x,-desired.y);
-  for(int axis=0;axis<3;++axis){const glm::vec3 start=mob.position;glm::vec3 candidate=start;candidate[axis]+=mob.velocity[axis]*dt;if(!mobCollides(mob,candidate,world))mob.position=candidate;else{float safe=start[axis],blocked=candidate[axis];for(int i=0;i<8;++i){const float mid=(safe+blocked)*.5f;glm::vec3 probe=start;probe[axis]=mid;if(mobCollides(mob,probe,world))blocked=mid;else safe=mid;}mob.position[axis]=safe;mob.velocity[axis]=0;}}
+  constexpr float epsilon=.0001f;
+  const bool canStep=mob.onGround&&mob.velocity.y<=0.f&&mobCollides(mob,mob.position-glm::vec3(0,.03f,0),world);
+  const float vertical=mob.velocity.y*dt;
+  if(std::abs(sweepMob(mob,mob.position,1,vertical,world)-vertical)>epsilon)mob.velocity.y=0.f;
+  const glm::vec3 start=mob.position;
+  const float dx=mob.velocity.x*dt,dz=mob.velocity.z*dt;
+  glm::vec3 normal=start;
+  sweepMob(mob,normal,0,dx,world);sweepMob(mob,normal,2,dz,world);
+  const bool blocked=std::abs(normal.x-start.x-dx)>epsilon||std::abs(normal.z-start.z-dz)>epsilon;
+  mob.position=normal;
+  if(canStep&&blocked){
+    // Evaluate one combined X/Z step, never an independent rise per axis.
+    glm::vec3 stepped=start;
+    const float lift=sweepMob(mob,stepped,1,MOB_STEP_HEIGHT,world);
+    sweepMob(mob,stepped,0,dx,world);sweepMob(mob,stepped,2,dz,world);
+    const float descent=sweepMob(mob,stepped,1,-lift-.001f,world);
+    const float rise=stepped.y-start.y;
+    const glm::vec2 normalTravel{normal.x-start.x,normal.z-start.z};
+    const glm::vec2 stepTravel{stepped.x-start.x,stepped.z-start.z};
+    const bool supported=descent>-lift-.001f+epsilon;
+    if(supported&&rise>epsilon&&rise<=MOB_STEP_HEIGHT+epsilon&&
+       glm::dot(stepTravel,stepTravel)>glm::dot(normalTravel,normalTravel)+epsilon*epsilon&&
+       !mobCollides(mob,stepped,world)){
+      mob.position=stepped;mob.velocity.y=0.f;
+    }
+  }
+  if(std::abs(mob.position.x-start.x-dx)>epsilon)mob.velocity.x=0.f;
+  if(std::abs(mob.position.z-start.z-dz)>epsilon)mob.velocity.z=0.f;
   const float halfWidth=mobWidth(mob.type)*mobScale(mob)*.5f;mob.position.x=std::clamp(mob.position.x,halfWidth,1000.f-halfWidth);mob.position.z=std::clamp(mob.position.z,halfWidth,1000.f-halfWidth);mob.onGround=mobCollides(mob,mob.position-glm::vec3(0,.03f,0),world);if(glm::length(desired)>.1f)mob.animationTime+=dt*speed*5.f;
 }
 
