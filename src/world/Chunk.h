@@ -9,11 +9,14 @@
 class Chunk {
 public:
   static constexpr int SIZE_X=16,SIZE_Y=256,SIZE_Z=16,COUNT=SIZE_X*SIZE_Y*SIZE_Z;
+  static constexpr int LIGHT_RADIUS=15;
   explicit Chunk(glm::ivec2 position);
   void setBlock(int x,int y,int z,BlockType type);
   BlockType getBlock(int x,int y,int z)const;
   void computeSkyLight(const std::function<BlockType(int,int,int)>& worldBlock);
   std::uint8_t skyLight(int x,int y,int z)const;
+  // Face order: +X, -X, +Y, -Y, +Z, -Z. Includes directional shade.
+  float faceShade(int x,int y,int z,int face)const;
   void generateMesh(const std::function<BlockType(int,int,int)>& worldBlock);
   void render()const{if(m_ready)m_mesh.render();}
   bool ready()const{return m_ready;}
@@ -24,8 +27,11 @@ public:
   void markLightingDirty(){m_lightingDirty=true;m_meshDirty=true;}
   glm::ivec2 position()const{return m_position;}
 private:
-  glm::ivec2 m_position; std::array<BlockType,COUNT> m_blocks{}; std::array<std::uint8_t,COUNT> m_skyLight{}; Mesh m_mesh;
+  static constexpr int LIGHT_X=SIZE_X+2,LIGHT_Z=SIZE_Z+2;
+  glm::ivec2 m_position; std::array<BlockType,COUNT> m_blocks{};
+  std::array<std::uint8_t,LIGHT_X*SIZE_Y*LIGHT_Z> m_skyLight{}; Mesh m_mesh;
   bool m_ready=false,m_meshDirty=true,m_lightingDirty=true;
   static int index(int x,int y,int z){return(y*SIZE_Z+z)*SIZE_X+x;}
+  static int lightIndex(int x,int y,int z){return(y*LIGHT_Z+z+1)*LIGHT_X+x+1;}
 };
 

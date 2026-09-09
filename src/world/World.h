@@ -42,6 +42,8 @@ private:
   bool processNearestTask(ChunkTaskType type,int pcx,int pcz);
   void processPendingTasks(int pcx,int pcz);
   void discardDistantTasks(int pcx,int pcz);
-  void markNeighbors(int cx,int cz,bool lighting=false);
+  void markNeighbors(int cx,int cz);
+  void invalidateLightingAt(int x,int z);
+  BlockType lightingBlock(int x,int y,int z)const;
 };
 
