@@ -9,7 +9,6 @@
 #include "../world/LootTable.h"
 #include "../world/PassiveMobSystem.h"
 #include "DayNightCycle.h"
-#include "BreakMode.h"
 #include <GLFW/glfw3.h>
 #include <memory>
 
@@ -19,7 +18,7 @@ public:
 private:
   GLFWwindow* m_window=nullptr; Player m_player; PlayerCamera m_camera; World m_world; Inventory m_inventory; PassiveMobSystem m_mobs; DayNightCycle m_dayNight; std::unique_ptr<Renderer> m_renderer;
   bool m_captured=true,m_firstMouse=true,m_inventoryOpen=false,m_tableOpen=false;
-  BreakModeState m_breakMode; SprintState m_sprint; EatingState m_eating; LootTable m_loot; bool m_leftMouseWasDown=false,m_semiAutoMiningActive=false,m_primaryAttackConsumed=false;
+  SprintState m_sprint; EatingState m_eating; LootTable m_loot; bool m_leftMouseWasDown=false,m_primaryAttackConsumed=false;
   double m_lastX=0,m_lastY=0; float m_clickCooldown=0,m_attackCooldown=0; int m_creativePage=0;
   void setInventoryOpen(bool open,bool table=false);
   void input(float dt);
