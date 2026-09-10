@@ -51,7 +51,7 @@ void PlayerRenderer::draw(const Player&p,float dt,const glm::mat4&view,const glm
   auto limb=[&](float x,float y,float angle,float outward,const CuboidMesh&mesh){glm::mat4 joint=body*glm::translate(glm::mat4(1),{x,y,0})*glm::rotate(glm::mat4(1),outward,{0,0,1})*glm::rotate(glm::mat4(1),angle,{1,0,0});drawPart(mesh,joint*glm::translate(glm::mat4(1),{0,-.325f,0}));};
   limb(-.36f,1.29f,a.leftArm,a.leftArmOut,*m_arm);limb(.36f,1.29f,a.rightArm,a.rightArmOut,*m_arm);limb(-.12f,.65f,a.leftLeg,0,*m_leg);limb(.12f,.65f,a.rightLeg,0,*m_leg);
 }
-void PlayerRenderer::drawFirstPerson(const Player&p,const ItemStack&held,float dt,const glm::mat4&view,const glm::mat4&projection,const glm::vec3&camera,const DayNightCycle&dayNight){
+void PlayerRenderer::drawFirstPerson(const Player&p,const ItemStack&held,float dt,bool mining,float useSwingTimer,const glm::mat4&view,const glm::mat4&projection,const glm::vec3&camera,const DayNightCycle&dayNight){
   const glm::vec3 forward=glm::normalize(p.forward());
   const glm::vec3 right=glm::normalize(glm::cross(forward,glm::vec3{0,1,0}));
   const glm::vec3 up=glm::normalize(glm::cross(right,forward));
@@ -65,8 +65,13 @@ void PlayerRenderer::drawFirstPerson(const Player&p,const ItemStack&held,float d
   const float speed=glm::length(glm::vec2{p.velocity.x,p.velocity.z});
   const float bob=std::min(speed/5.f,1.f);
   const float phase=m_firstPersonTime*(5.f+speed*.35f);
+  const float miningPunch=mining?std::max(0.f,std::sin(m_firstPersonTime*18.f))*.16f:0.f;
+  const float useProgress=std::clamp(1.f-useSwingTimer/.2f,0.f,1.f);
+  const float useSwing=useSwingTimer>0.f?std::sin(useProgress*3.14159265f)*.22f:0.f;
   const glm::mat4 motion=glm::translate(glm::mat4(1),{std::sin(phase)*.025f*bob,std::abs(std::cos(phase))*.025f*bob,0.f})
-    *glm::rotate(glm::mat4(1),std::sin(phase)*.04f*bob,{0,0,1});
+    *glm::rotate(glm::mat4(1),std::sin(phase)*.04f*bob,{0,0,1})
+    *glm::translate(glm::mat4(1),{0,-miningPunch-useSwing,0})
+    *glm::rotate(glm::mat4(1),miningPunch*.9f+useSwing*1.2f,{1,0,0});
   const glm::mat4 hand=glm::translate(glm::mat4(1),camera+forward*.7f+right*.42f-up*.42f)
     *basis*motion*glm::rotate(glm::mat4(1),-.7f,{1,0,0});
   drawPart(*m_arm,hand*glm::scale(glm::mat4(1),{.82f,1.12f,.82f}));
