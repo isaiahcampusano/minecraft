@@ -34,7 +34,7 @@ private:
 
   static constexpr std::size_t MAX_DROPS=128;
   static constexpr float HALF_SIZE=.125f;
-  static constexpr float PICKUP_RADIUS=1.1f;
+  static constexpr float PICKUP_RADIUS=1.5f;
   static constexpr float BOB_HEIGHT=.06f;
   static constexpr float BOB_SPEED=2.2f;
   static constexpr float MAX_AGE=300.f;
