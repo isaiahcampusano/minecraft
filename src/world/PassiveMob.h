@@ -25,7 +25,7 @@ struct PassiveMob{
   glm::vec3 position{0},velocity{0},target{0},fleeSource{0};
   float yaw=0,age=0,stateTimer=0,aiTimer=0,hurtTimer=0,grazeCooldown=0,animationTime=0;
   int health=0;bool onGround=false;
-  std::vector<glm::ivec3> path;std::size_t pathIndex=0;
+  std::vector<glm::ivec3> path;std::size_t pathIndex=0;int blockedTicks=0;
   constexpr bool isBaby()const{return age<0;}
 };
 
