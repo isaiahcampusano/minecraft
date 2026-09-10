@@ -46,6 +46,7 @@ private:
   void fixedTick(World& world,const glm::vec3& playerPosition);
   void updateAI(PassiveMob& mob,World& world);
   void updateMovement(PassiveMob& mob,float dt,const World& world);
+  bool findWanderDestination(const PassiveMob& mob,const World& world,const glm::ivec3& intended,glm::ivec3& target,std::vector<glm::ivec3>& path)const;
   void chooseWander(PassiveMob& mob,const World& world);
   void followParent(PassiveMob& mob,const World& world);
   bool chooseGrass(PassiveMob& mob,const World& world);

@@ -65,7 +65,25 @@ void PassiveMobSystem::initialize(World& world,const glm::vec3& playerPosition,f
 
 bool PassiveMobSystem::active(const PassiveMob& mob,const World& world,const glm::vec3& playerPosition)const{return world.isChunkLoadedAt(static_cast<int>(std::floor(mob.position.x)),static_cast<int>(std::floor(mob.position.z)))&&glm::distance(mob.position,playerPosition)<=ACTIVE_DISTANCE;}
 
-void PassiveMobSystem::chooseWander(PassiveMob& mob,const World& world){const float angle=random01()*6.2831853f,distance=6.f+random01()*6.f;const int x=std::clamp(static_cast<int>(std::floor(mob.position.x+std::cos(angle)*distance)),1,998),z=std::clamp(static_cast<int>(std::floor(mob.position.z+std::sin(angle)*distance)),1,998),groundY=surfaceY(world,x,z);if(groundY<0){mob.stateTimer=2.f;return;}mob.target={x+.5f,groundY+1.f,z+.5f};mob.path=Pathfinder::findPath(world,glm::ivec3(glm::floor(mob.position)),{x,groundY+1,z});mob.pathIndex=0;if(mob.path.empty()){mob.state=MobAIState::IDLE;mob.stateTimer=2.f+random01()*3.f;}else mob.state=MobAIState::WANDERING;}
+bool PassiveMobSystem::findWanderDestination(const PassiveMob& mob,const World& world,const glm::ivec3& intended,glm::ivec3& target,std::vector<glm::ivec3>& path)const{
+  const glm::ivec3 start=glm::ivec3(glm::floor(mob.position));
+  const int startY=start.y;
+  for(int radius=0;radius<=2;++radius)for(int dz=-radius;dz<=radius;++dz)for(int dx=-radius;dx<=radius;++dx){
+    if(std::max(std::abs(dx),std::abs(dz))!=radius)continue;
+    const int x=std::clamp(intended.x+dx,1,998),z=std::clamp(intended.z+dz,1,998);
+    if(!world.isChunkLoadedAt(x,z))continue;
+    for(int y=startY+2;y>=startY-3;--y){
+      const glm::ivec3 candidate{x,y,z};
+      if(!Pathfinder::isWalkable(world,candidate))continue;
+      auto candidatePath=Pathfinder::findPath(world,start,candidate);
+      if(candidatePath.empty()&&candidate!=start)continue;
+      target=candidate;path=std::move(candidatePath);return true;
+    }
+  }
+  return false;
+}
+
+void PassiveMobSystem::chooseWander(PassiveMob& mob,const World& world){const float angle=random01()*6.2831853f,distance=6.f+random01()*6.f;const int x=std::clamp(static_cast<int>(std::floor(mob.position.x+std::cos(angle)*distance)),1,998),z=std::clamp(static_cast<int>(std::floor(mob.position.z+std::sin(angle)*distance)),1,998);glm::ivec3 feet;std::vector<glm::ivec3> path;if(!findWanderDestination(mob,world,{x,0,z},feet,path)){mob.state=MobAIState::IDLE;mob.stateTimer=2.f+random01()*3.f;mob.path.clear();mob.pathIndex=0;return;}mob.target={feet.x+.5f,static_cast<float>(feet.y),feet.z+.5f};mob.path=std::move(path);mob.pathIndex=0;mob.state=MobAIState::WANDERING;}
 
 void PassiveMobSystem::followParent(PassiveMob& mob,const World& world){const PassiveMob* parent=nullptr;float best=16.f;for(const auto& candidate:m_mobs)if(candidate.id!=mob.id&&candidate.type==mob.type&&!candidate.isBaby()){const float distance=horizontalDistance(mob.position,candidate.position);if(distance<best){best=distance;parent=&candidate;}}if(!parent){mob.state=MobAIState::IDLE;mob.stateTimer=2.f;mob.path.clear();return;}mob.state=MobAIState::FOLLOWING_PARENT;if(best<=3.f){mob.path.clear();mob.pathIndex=0;return;}const glm::ivec3 target=glm::ivec3(glm::floor(parent->position));mob.target=parent->position;mob.path=Pathfinder::findPath(world,glm::ivec3(glm::floor(mob.position)),target);mob.pathIndex=0;}
 

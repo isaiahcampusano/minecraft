@@ -81,6 +81,20 @@ int main(){try{
   reset(world);world.setBlock(511,7,511,BlockType::STONE);
   {PassiveMobSystem s(10);setup(s,MobType::COW,false,{511.5f,8.f,511.5f},{{513,7,511}});tick(s,world,60);
    check(s.mobs()[0].pathIndex==1&&std::abs(s.mobs()[0].position.y-7.f)<.001f,"step down failed");}
+  for(auto type:{MobType::COW,MobType::PIG,MobType::SHEEP})for(bool baby:{false,true})for(const auto& d:dirs){
+    reset(world);world.setBlock(511,7,511,BlockType::STONE);
+    const glm::ivec3 start{511,8,511},target{511+d[0],7,511+d[1]};
+    const auto path=Pathfinder::findPath(world,start,target);
+    check(!path.empty()&&path.back()==target,"generated downhill path missing");
+    PassiveMobSystem s(13);setup(s,type,baby,{511.5f,8.f,511.5f},path);tick(s,world,80);
+    const auto& m=s.mobs()[0];
+    check(m.pathIndex==path.size()&&std::abs(m.position.y-7.f)<.001f&&m.onGround,"generated downhill route failed");
+  }
+  reset(world);world.setBlock(517,9,511,BlockType::LEAVES);
+  {PassiveMobSystem s(721);auto& m=s.addMob(MobType::COW,{511.5f,7.f,511.5f});m.aiTimer=0;m.stateTimer=0;m.grazeCooldown=1000;
+   s.update(.05f,world,{511.5f,8.f,511.5f},0.f);const auto& cow=s.mobs()[0];
+   check(cow.state==MobAIState::WANDERING&&!cow.path.empty(),"wander did not choose a reachable under-canopy path");
+   check(cow.target.y==7.f&&std::abs(cow.target.x-517.5f)<.001f&&std::abs(cow.target.z-511.5f)<.001f,"wander targeted canopy instead of clear ground");}
   reset(world);
   {PassiveMobSystem s(11);auto& m=setup(s,MobType::COW,false,{511.5f,7.f,511.5f},{});LootTable loot(1);
    check(s.damage(m.id,1,{510.f,7.f,511.5f},loot,{}),"damage failed");m.aiTimer=1000;
