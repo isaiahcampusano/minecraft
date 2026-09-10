@@ -47,6 +47,7 @@ Run `Minecraft` from the build output directory.
 | `Right Click` | Place selected block / eat apple (hold 1.6s) |
 | `1–9` | Select hotbar slot |
 | `E` | Open backpack, crafting grid, and creative palette |
+| `Left Click` (inventory) | Pick up an item, then release over a slot to drag it there |
 | `Right Click` (crafting table) | Open 3×3 crafting grid |
 | `F` | Toggle flying |
 | `F5` | Switch first/third person |
