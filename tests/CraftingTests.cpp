@@ -17,6 +17,8 @@ int main(){
 
   const auto wood=ItemStack::block(BlockType::PLANKS),stick=ItemStack::material(MaterialType::STICK);
   grid={};grid[0]=wood;grid[1]=wood;grid[3]=wood;grid[4]=stick;grid[7]=stick;const auto* axe=CraftingRegistry::match(grid,3,3);if(!axe||axe->output.kind!=ItemKind::TOOL||axe->output.toolKind!=ToolKind::AXE||axe->output.toolTier!=ToolTier::WOOD)return fail("aligned wooden axe recipe did not match");
+  grid={};grid[1]=wood;grid[4]=stick;grid[7]=stick;const auto* shovel=CraftingRegistry::match(grid,3,3);if(!shovel||shovel->output.kind!=ItemKind::TOOL||shovel->output.toolKind!=ToolKind::SHOVEL||shovel->output.toolTier!=ToolTier::WOOD)return fail("translated wooden shovel recipe did not match");
+  cursor={};if(!CraftingRegistry::craft(grid,3,3,cursor)||!grid[1].empty()||!grid[4].empty()||!grid[7].empty()||cursor.toolKind!=ToolKind::SHOVEL)return fail("translated shaped craft consumed the wrong slots");
   grid={};grid[0]=wood;grid[1]=wood;grid[4]=wood;grid[3]=stick;grid[6]=stick;if(CraftingRegistry::match(grid,3,3))return fail("mirrored axe recipe matched without an explicit mirrored recipe");
   grid={};grid[0]=wood;grid[1]=wood;grid[3]=stick;grid[4]=wood;grid[5]=stick;if(CraftingRegistry::match(grid,3,3))return fail("rotated axe recipe matched without an explicit rotated recipe");
   grid={};grid[0]=wood;grid[1]=wood;grid[3]=wood;grid[4]=stick;if(CraftingRegistry::match(grid,3,3))return fail("insufficient tool ingredients matched");

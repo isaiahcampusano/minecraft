@@ -34,6 +34,8 @@ int main() {
   for(BlockType type:allPlaceableBlocks()){auto index=static_cast<std::size_t>(type);if(type==BlockType::AIR||index>=seen.size()||seen[index])return fail("creative block range is invalid");seen[index]=true;++creativeCount;}
   if(creativeCount!=BLOCK_TYPE_COUNT-1)return fail("creative range does not cover every non-air block");
   const std::size_t expectedCatalog=(BLOCK_TYPE_COUNT-1)+static_cast<std::size_t>(MaterialType::COUNT)+static_cast<std::size_t>(FoodType::COUNT);if(creativeCatalog().size()!=expectedCatalog||creativeCatalog().back().kind!=ItemKind::FOOD||creativeCatalog().back().foodType!=FoodType::RAW_MUTTON)return fail("creative catalog does not include all mob loot items");
+  if(itemName(ItemStack::tool(ToolKind::PICKAXE,ToolTier::WOOD,60))!="WOOD PICKAXE")return fail("tool item name did not include tier and kind");
+  if(itemName(creativeCatalog().front())!=blockName(creativeCatalog().front().blockType))return fail("creative catalog item name did not match the block registry");
   Inventory creative;
   if(!creative.giveCreative(BlockType::LEAVES)||creative.cursorStack().blockType!=BlockType::LEAVES||creative.cursorStack().count!=Inventory::CREATIVE_STACK_SIZE)return fail("creative give did not create a full LEAVES stack");
   creative.swapBackpack(0);
