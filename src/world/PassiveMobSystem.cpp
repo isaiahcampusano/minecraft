@@ -137,7 +137,15 @@ void PassiveMobSystem::updateMovement(PassiveMob& mob,float dt,const World& worl
 void PassiveMobSystem::fixedTick(World& world,const glm::vec3& playerPosition){for(auto& mob:m_mobs){if(!active(mob,world,playerPosition))continue;if(mob.age<0)mob.age=std::min(0.f,mob.age+TICK_STEP);mob.hurtTimer=std::max(0.f,mob.hurtTimer-TICK_STEP);mob.grazeCooldown=std::max(0.f,mob.grazeCooldown-TICK_STEP);mob.aiTimer-=TICK_STEP;if(mob.state==MobAIState::FLEEING){mob.stateTimer-=TICK_STEP;if(mob.stateTimer<=0){mob.state=MobAIState::IDLE;mob.stateTimer=2.f+random01()*3.f;mob.path.clear();}}else if(mob.state==MobAIState::IDLE)mob.stateTimer-=TICK_STEP;else if(mob.state==MobAIState::GRAZING&&mob.pathIndex>=mob.path.size()&&horizontalDistance(mob.position,mob.target)<.8f){mob.stateTimer-=TICK_STEP;if(mob.stateTimer<=0){const glm::ivec3 ground=glm::ivec3(glm::floor(mob.target-glm::vec3(0,1.f,0)));if(world.getBlock(ground.x,ground.y,ground.z)==BlockType::GRASS)world.setBlock(ground.x,ground.y,ground.z,BlockType::DIRT);mob.grazeCooldown=20.f+random01()*20.f;mob.state=MobAIState::IDLE;mob.stateTimer=2.f;mob.path.clear();}}if(mob.aiTimer<=0){mob.aiTimer=AI_STEP;updateAI(mob,world);}updateMovement(mob,TICK_STEP,world);}}
 
 bool PassiveMobSystem::spreadGrassAt(World& world,const glm::ivec3& ground){if(world.getBlock(ground.x,ground.y,ground.z)!=BlockType::DIRT||isSolid(world.getBlock(ground.x,ground.y+1,ground.z)))return false;static constexpr int directions[4][2]={{1,0},{-1,0},{0,1},{0,-1}};for(const auto& direction:directions)if(world.getBlock(ground.x+direction[0],ground.y,ground.z+direction[1])==BlockType::GRASS)return world.setBlock(ground.x,ground.y,ground.z,BlockType::GRASS);return false;}
-void PassiveMobSystem::spreadGrass(World& world,const glm::vec3& playerPosition){for(int attempt=0;attempt<8;++attempt){const int x=std::clamp(static_cast<int>(std::floor(playerPosition.x))+randomInt(-48,48),1,998),z=std::clamp(static_cast<int>(std::floor(playerPosition.z))+randomInt(-48,48),1,998),y=surfaceY(world,x,z);if(y>=0&&randomInt(0,3)==0)spreadGrassAt(world,{x,y,z});}}
+void PassiveMobSystem::spreadGrass(World& world,const glm::vec3& playerPosition){
+  const int centerX=static_cast<int>(std::floor(playerPosition.x)),centerZ=static_cast<int>(std::floor(playerPosition.z));
+  int spread=0;
+  for(int z=centerZ-48;z<=centerZ+48&&spread<8;++z)
+    for(int x=centerX-48;x<=centerX+48&&spread<8;++x){
+      const int clampedX=std::clamp(x,1,998),clampedZ=std::clamp(z,1,998),y=surfaceY(world,clampedX,clampedZ);
+      if(y>=0&&spreadGrassAt(world,{clampedX,y,clampedZ}))++spread;
+    }
+}
 
 void PassiveMobSystem::update(float dt,World& world,const glm::vec3& playerPosition,float daylight){dt=std::clamp(dt,0.f,.1f);initialize(world,playerPosition,daylight);m_spawnTimer+=dt;m_grassTimer+=dt;if(m_spawnTimer>=SPAWN_INTERVAL){m_spawnTimer=0;if(nearbyCount(playerPosition)<TARGET_NEARBY)spawnPack(static_cast<MobType>(randomInt(0,static_cast<int>(MobType::COUNT)-1)),world,playerPosition,daylight,4);}if(m_grassTimer>=1.f){m_grassTimer=0;spreadGrass(world,playerPosition);}m_tickAccumulator+=dt;while(m_tickAccumulator+1e-6f>=TICK_STEP){m_tickAccumulator=std::max(0.f,m_tickAccumulator-TICK_STEP);fixedTick(world,playerPosition);}}
 
