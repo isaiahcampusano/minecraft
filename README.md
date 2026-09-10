@@ -43,12 +43,11 @@ Run `Minecraft` from the build output directory.
 | `Left Control` | Fly downward |
 | `Mouse` | Look |
 | `Scroll` | Change field of view |
-| `Left Click` | Attack mob (within 4.5 blocks) or mine block |
+| `Left Click` (hold) | Attack mob (within 4.5 blocks) or continuously mine blocks |
 | `Right Click` | Place selected block / eat apple (hold 1.6s) |
 | `1–9` | Select hotbar slot |
 | `E` | Open backpack, crafting grid, and creative palette |
 | `Right Click` (crafting table) | Open 3×3 crafting grid |
-| `G` | Toggle break mode: `SINGLE` / `FULL AUTO` |
 | `F` | Toggle flying |
 | `F5` | Switch first/third person |
 | `Escape` | Release/capture mouse |

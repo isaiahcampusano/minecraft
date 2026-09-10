@@ -39,3 +39,17 @@ void PlayerRenderer::draw(const Player&p,float dt,const glm::mat4&view,const glm
   auto limb=[&](float x,float y,float angle,float outward,const CuboidMesh&mesh){glm::mat4 joint=body*glm::translate(glm::mat4(1),{x,y,0})*glm::rotate(glm::mat4(1),outward,{0,0,1})*glm::rotate(glm::mat4(1),angle,{1,0,0});drawPart(mesh,joint*glm::translate(glm::mat4(1),{0,-.325f,0}));};
   limb(-.36f,1.29f,a.leftArm,a.leftArmOut,*m_arm);limb(.36f,1.29f,a.rightArm,a.rightArmOut,*m_arm);limb(-.12f,.65f,a.leftLeg,0,*m_leg);limb(.12f,.65f,a.rightLeg,0,*m_leg);
 }
+void PlayerRenderer::drawFirstPerson(const Player&p,const glm::mat4&view,const glm::mat4&projection,const glm::vec3&camera,const DayNightCycle&dayNight){
+  const glm::vec3 forward=glm::normalize(p.forward());
+  const glm::vec3 right=glm::normalize(glm::cross(forward,glm::vec3{0,1,0}));
+  const glm::vec3 up=glm::normalize(glm::cross(right,forward));
+  const glm::mat4 basis{
+    glm::vec4(right,0),glm::vec4(up,0),glm::vec4(-forward,0),glm::vec4(0,0,0,1)
+  };
+  m_shader.use();m_shader.setMat4("view",view);m_shader.setMat4("projection",projection);
+  m_shader.setVec3("lightDir",dayNight.sunDirection());m_shader.setVec3("viewPos",camera);
+  m_shader.setVec3("fogColor",dayNight.skyBottom());m_shader.setFloat("daylight",dayNight.daylight());
+  const glm::mat4 hand=glm::translate(glm::mat4(1),camera+forward*.62f+right*.43f-up*.45f)
+    *basis*glm::rotate(glm::mat4(1),-.35f,{1,0,0});
+  drawPart(*m_arm,hand*glm::scale(glm::mat4(1),{1.f,1.18f,1.f}));
+}
