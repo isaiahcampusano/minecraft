@@ -60,6 +60,11 @@ int main(){try{
   for(int z=509;z<=513;++z)for(int y=7;y<=8;++y)world.setBlock(512,y,z,BlockType::STONE);
   {PassiveMobSystem s(4);setup(s,MobType::COW,false,{511.5f,7.f,511.5f},{{513,9,511}});tick(s,world,60);
    check(s.mobs()[0].position.x<512.f&&std::abs(s.mobs()[0].position.y-7.f)<.001f,"climbed two-block wall");}
+  reset(world);world.setBlock(512,7,511,BlockType::STONE);world.setBlock(512,8,511,BlockType::STONE);
+  {PassiveMobSystem s(14);setup(s,MobType::PIG,false,{511.5f,7.f,511.5f},{{512,7,511},{513,7,511}});tick(s,world,60);
+   const auto& m=s.mobs()[0];
+   check(m.state==MobAIState::IDLE&&m.path.empty()&&std::abs(m.velocity.x)<.001f&&std::abs(m.velocity.z)<.001f,
+         "pig kept retrying a blocked path");}
   for(bool baby:{false,true}){
     reset(world);world.setBlock(512,7,511,BlockType::STONE);world.setBlock(511,baby?8:9,511,BlockType::STONE);
     PassiveMobSystem s(5);setup(s,MobType::COW,baby,{511.5f,7.f,511.5f},{{512,8,511}});tick(s,world,60);

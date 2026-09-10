@@ -105,6 +105,7 @@ void PassiveMobSystem::updateMovement(PassiveMob& mob,float dt,const World& worl
   sweepMob(mob,normal,0,dx,world);sweepMob(mob,normal,2,dz,world);
   const bool blocked=std::abs(normal.x-start.x-dx)>epsilon||std::abs(normal.z-start.z-dz)>epsilon;
   mob.position=normal;
+  bool steppedUp=false;
   if(canStep&&blocked){
     // Evaluate one combined X/Z step, never an independent rise per axis.
     glm::vec3 stepped=start;
@@ -119,8 +120,15 @@ void PassiveMobSystem::updateMovement(PassiveMob& mob,float dt,const World& worl
        glm::dot(stepTravel,stepTravel)>glm::dot(normalTravel,normalTravel)+epsilon*epsilon&&
        !mobCollides(mob,stepped,world)){
       mob.position=stepped;mob.velocity.y=0.f;
+      steppedUp=true;
     }
   }
+  if(blocked&&!steppedUp&&mob.pathIndex<mob.path.size()){
+    if(++mob.blockedTicks>=10){
+      mob.path.clear();mob.pathIndex=0;mob.state=MobAIState::IDLE;mob.stateTimer=2.f+random01()*3.f;
+      mob.blockedTicks=0;
+    }
+  }else if(!blocked||steppedUp)mob.blockedTicks=0;
   if(std::abs(mob.position.x-start.x-dx)>epsilon)mob.velocity.x=0.f;
   if(std::abs(mob.position.z-start.z-dz)>epsilon)mob.velocity.z=0.f;
   const float halfWidth=mobWidth(mob.type)*mobScale(mob)*.5f;mob.position.x=std::clamp(mob.position.x,halfWidth,1000.f-halfWidth);mob.position.z=std::clamp(mob.position.z,halfWidth,1000.f-halfWidth);mob.onGround=mobCollides(mob,mob.position-glm::vec3(0,.03f,0),world);if(glm::length(desired)>.1f)mob.animationTime+=dt*speed*5.f;
