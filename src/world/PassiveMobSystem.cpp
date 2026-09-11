@@ -2,6 +2,7 @@
 #include "LootTable.h"
 #include "Pathfinder.h"
 #include "World.h"
+#include "../player/ToolRegistry.h"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -151,7 +152,7 @@ void PassiveMobSystem::update(float dt,World& world,const glm::vec3& playerPosit
 
 MobHit PassiveMobSystem::raycast(const glm::vec3& origin,const glm::vec3& direction,float maxDistance)const{MobHit result;if(glm::dot(direction,direction)<=0||maxDistance<=0)return result;const glm::vec3 normalized=glm::normalize(direction);result.distance=maxDistance;for(const auto& mob:m_mobs){const float scale=mobScale(mob),halfWidth=mobWidth(mob.type)*scale*.5f;const glm::vec3 low=mob.position+glm::vec3(-halfWidth,0,-halfWidth),high=mob.position+glm::vec3(halfWidth,mobHeight(mob.type)*scale,halfWidth);float distance=0;if(rayBox(origin,normalized,low,high,result.distance,distance)){result={true,mob.id,distance};}}return result;}
 
-int PassiveMobSystem::attackDamage(const ItemStack& held){if(held.kind!=ItemKind::TOOL||held.empty())return 1;if(held.toolKind==ToolKind::SWORD)return held.toolTier==ToolTier::STONE?5:4;if(held.toolKind==ToolKind::AXE)return held.toolTier==ToolTier::STONE?4:3;return 1;}
+int PassiveMobSystem::attackDamage(const ItemStack& held){return held.kind==ItemKind::TOOL&&!held.empty()?toolAttackDamage(held.toolKind,held.toolTier):1;}
 
 bool PassiveMobSystem::damage(MobId id,int amount,const glm::vec3& source,LootTable& loot,const DropHandler& spawnDrop){auto found=std::find_if(m_mobs.begin(),m_mobs.end(),[&](const PassiveMob& mob){return mob.id==id;});if(found==m_mobs.end()||amount<=0||found->hurtTimer>0)return false;found->health-=amount;found->hurtTimer=.5f;found->fleeSource=source;found->state=MobAIState::FLEEING;found->stateTimer=3.f;found->aiTimer=0;found->path.clear();glm::vec2 away{found->position.x-source.x,found->position.z-source.z};if(glm::dot(away,away)>.01f){away=glm::normalize(away);found->velocity.x=away.x*3.f;found->velocity.z=away.y*3.f;}found->velocity.y=3.f;if(found->health>0)return true;const glm::vec3 position=found->position;const auto drops=loot.mobDrops(found->type,found->isBaby());m_mobs.erase(found);if(spawnDrop)for(const auto& drop:drops)spawnDrop(position-glm::vec3(.5f,.3f,.5f),drop);return true;}
 

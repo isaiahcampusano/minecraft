@@ -23,5 +23,8 @@ int main(){
   const ItemStack axe=ItemStack::tool(ToolKind::AXE,ToolTier::STONE,maxToolDurability(ToolTier::STONE));if(toolMatches(axe,stone)||!near(miningSpeedMultiplier(axe,stone),1.f))return fail("mismatched tool received a mining bonus");
   Inventory inventory;inventory.setHotbarSlot(0,woodPick);for(int i=1;i<maxToolDurability(ToolTier::WOOD);++i)if(!inventory.damageSelectedTool()||inventory.selectedStack().empty())return fail("wood tool broke before its documented durability");if(!inventory.damageSelectedTool()||!inventory.selectedStack().empty())return fail("wood tool did not clear at exactly zero durability");
   inventory.setHotbarSlot(0,axe);const int before=inventory.selectedStack().durability;if(toolMatches(inventory.selectedStack(),stone))inventory.damageSelectedTool();if(inventory.selectedStack().durability!=before)return fail("mismatched tool took category durability damage");
+  if(toolAttackDamage(ToolKind::SWORD,ToolTier::WOOD)!=4||toolAttackDamage(ToolKind::SWORD,ToolTier::STONE)!=5)return fail("sword damage did not scale by tier");
+  if(toolAttackDamage(ToolKind::PICKAXE,ToolTier::WOOD)!=2||toolAttackDamage(ToolKind::PICKAXE,ToolTier::STONE)!=3)return fail("pickaxe damage did not scale by tier");
+  if(toolAttackDamage(ToolKind::HOE,ToolTier::WOOD)!=2)return fail("hoe damage table was not initialized");
   return 0;
 }
