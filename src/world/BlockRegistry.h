@@ -7,10 +7,10 @@ struct BlockColor{std::uint8_t r,g,b;};
 inline constexpr std::array<BlockColor,BLOCK_TYPE_COUNT> BLOCK_COLORS={{
   {58,58,60},{105,178,62},{126,78,43},{58,58,60},{100,100,100},
   {150,150,150},{150,100,50},{220,200,150},{140,140,140},{177,218,224},
-  {51,153,26},{181,136,82},{142,95,52}
+  {51,153,26},{181,136,82},{142,95,52},{220,80,100}
 }};
 inline constexpr std::array<const char*,BLOCK_TYPE_COUNT> BLOCK_NAMES={{
-  "AIR","GRASS","DIRT","BEDROCK","STONE","COBBLESTONE","OAK LOG","SAND","GRAVEL","GLASS","LEAVES","PLANKS","CRAFTING TABLE"
+  "AIR","GRASS","DIRT","BEDROCK","STONE","COBBLESTONE","OAK LOG","SAND","GRAVEL","GLASS","LEAVES","PLANKS","CRAFTING TABLE","BED"
 }};
 
 class PlaceableBlockRange{

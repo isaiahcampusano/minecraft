@@ -18,13 +18,14 @@ struct SaveData {
   std::array<SlotData,27> backpack{};
   std::int32_t health=20,hunger=20;
   float saturation=5.f,exhaustion=0.f;
+  float spawnX=500.f,spawnY=8.f,spawnZ=500.f;
   std::vector<EditData> edits;
   std::vector<MobData> mobs;
 };
 
 class SaveLoad {
 public:
-  static constexpr std::uint32_t VERSION=4;
+  static constexpr std::uint32_t VERSION=5;
   static bool save(const SaveData& data);
   static bool save(const SaveData& data,const std::filesystem::path& path);
   static bool load(SaveData& out);
