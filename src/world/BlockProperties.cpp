@@ -16,7 +16,8 @@ constexpr std::array<BlockProperties,BLOCK_TYPE_COUNT> PROPERTIES={{
   {.2f,true,std::nullopt,std::nullopt},
   {2.f,true,ToolKind::AXE,std::nullopt},
   {2.5f,true,ToolKind::PICKAXE,ToolTier::WOOD},
-  {.2f,true,std::nullopt,std::nullopt}
+  {.2f,true,std::nullopt,std::nullopt},
+  {3.5f,true,ToolKind::PICKAXE,ToolTier::WOOD}
 }};
 constexpr BlockProperties INVALID{0.f,false,std::nullopt,std::nullopt};
 }

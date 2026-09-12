@@ -49,6 +49,8 @@ const std::vector<CraftingRecipe>& CraftingRegistry::recipes(){
     result.push_back(shapeless(2,1,{block(BlockType::PLANKS),block(BlockType::PLANKS)},ItemStack::material(MaterialType::STICK,4)));
     result.push_back(shaped(2,2,{block(BlockType::PLANKS),block(BlockType::PLANKS),block(BlockType::PLANKS),block(BlockType::PLANKS)},ItemStack::block(BlockType::CRAFTING_TABLE)));
     result.push_back(shaped(3,2,{material(MaterialType::WHITE_WOOL),material(MaterialType::WHITE_WOOL),material(MaterialType::WHITE_WOOL),block(BlockType::PLANKS),block(BlockType::PLANKS),block(BlockType::PLANKS)},ItemStack::block(BlockType::BED)));
+    const auto c=block(BlockType::COBBLESTONE),e=block(BlockType::AIR);
+    result.push_back(shaped(3,3,{c,c,c,c,e,c,c,c,c},ItemStack::block(BlockType::FURNACE)));
     addToolRecipes(result,ToolTier::WOOD);addToolRecipes(result,ToolTier::STONE);return result;
   }();
   return value;

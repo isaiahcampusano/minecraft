@@ -15,11 +15,13 @@
 
 class Application {
 public:
-  Application(); ~Application(); void run();
+  explicit Application(bool visible=true); ~Application(); void run();
 private:
+  friend struct CookingApplicationTests;
   enum class MenuState { Gameplay, Pause, Settings, Keybinds };
   GLFWwindow* m_window=nullptr; Player m_player; PlayerCamera m_camera; World m_world; Inventory m_inventory; PassiveMobSystem m_mobs; DayNightCycle m_dayNight; std::unique_ptr<Renderer> m_renderer;
   bool m_captured=true,m_firstMouse=true,m_inventoryOpen=false,m_tableOpen=false,m_inventoryDragging=false;
+  bool m_furnaceOpen=false;glm::ivec3 m_furnacePosition{-1};int m_furnaceDragSource=-1;
   MenuState m_menu=MenuState::Gameplay;
   SettingsState m_settings;
   bool m_menuMouseReleaseRequired=false;
@@ -30,6 +32,8 @@ private:
   void setMenu(MenuState menu);
   void handleMenuClick(double x,double y,int width,int height);
   void input(float dt);
+  void inventoryMouse(float mouseX,float mouseY,int width,int height,int action);
+  void updateSimulation(float dt);
   void updateMining(float dt,const glm::vec3& origin,const glm::vec3& direction,const RayHit& blockHit);
   void updateEating(float dt);
   void respawnPlayer();

@@ -83,3 +83,7 @@ flight, unlimited placement, and immediate block breaking without drops or tool
 wear. Survival retains hunger, damage, drops, and fall damage. Preferences are
 stored separately in `settings.cfg`; worlds use MCv6 and retain migration support
 for MCv2 through MCv5 (older worlds load in Survival).
+
+## Cooking
+
+Furnaces cook raw beef, porkchop, and mutton using logs, planks, or sticks. Craft one from eight cobblestone and right-click it to cook. See [Cooking v2.1](COOKING.md) for controls, fuel rules, and save compatibility.

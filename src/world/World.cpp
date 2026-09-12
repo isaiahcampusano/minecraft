@@ -48,7 +48,7 @@ BlockType World::lightingBlock(int x,int y,int z)const{
 BlockType World::getBlock(int x,int y,int z)const{if(x<0||x>=1000||z<0||z>=1000||y<0||y>=Chunk::SIZE_Y)return BlockType::AIR;int cx=floorDiv(x,16),cz=floorDiv(z,16);auto*c=find(cx,cz);return c?c->getBlock(x-cx*16,y,z-cz*16):BlockType::AIR;}
 std::uint8_t World::skyLight(int x,int y,int z)const{if(x<0||x>=1000||z<0||z>=1000||y<0||y>=Chunk::SIZE_Y)return 0;const int cx=floorDiv(x,16),cz=floorDiv(z,16);const auto* chunk=find(cx,cz);return chunk?chunk->skyLight(x-cx*16,y,z-cz*16):0;}
 bool World::isChunkLoadedAt(int x,int z)const{return x>=0&&x<1000&&z>=0&&z<1000&&find(floorDiv(x,16),floorDiv(z,16));}
-bool World::setBlock(int x,int y,int z,BlockType t){
+bool World::setBlock(int x,int y,int z,BlockType t,const FurnaceDropHandler& dropContents){
   if(x<0||x>=1000||z<0||z>=1000||y<0||y>=Chunk::SIZE_Y)return false;
   const int cx=floorDiv(x,16),cz=floorDiv(z,16);
   loadChunk(cx,cz);
@@ -56,11 +56,18 @@ bool World::setBlock(int x,int y,int z,BlockType t){
   m_edits[{x,y,z}]=t;
   if(chunk->getBlock(x-cx*16,y,z-cz*16)==t)return true;
   chunk->setBlock(x-cx*16,y,z-cz*16,t);
+  const auto furnace=m_furnaces.find({x,y,z});
+  if(furnace!=m_furnaces.end()){
+    const FurnaceState state=furnace->second;m_furnaces.erase(furnace);
+    if(dropContents)for(const auto& stack:{state.inputSlot,state.fuelSlot,state.outputSlot})
+      if(!stack.empty())dropContents(glm::vec3{x,y,z},stack);
+  }
+  if(t==BlockType::FURNACE)m_furnaces.try_emplace({x,y,z});
   invalidateLightingAt(x,z);
   return true;
 }
 std::vector<World::EditEntry> World::getEditEntries()const{std::vector<EditEntry> entries;entries.reserve(m_edits.size());for(const auto& edit:m_edits)entries.push_back({edit.first.x,edit.first.y,edit.first.z,edit.second});std::sort(entries.begin(),entries.end(),[](const EditEntry&a,const EditEntry&b){return std::tie(a.x,a.y,a.z)<std::tie(b.x,b.y,b.z);});return entries;}
-void World::applyEditEntries(const std::vector<EditEntry>& entries){std::vector<Key> loaded;loaded.reserve(m_chunks.size());for(const auto& chunk:m_chunks)loaded.push_back(chunk.first);m_chunks.clear();m_pendingTasks.clear();m_edits.clear();for(const auto& edit:entries){const auto type=static_cast<std::size_t>(edit.type);if(edit.x<0||edit.x>=1000||edit.z<0||edit.z>=1000||edit.y<0||edit.y>=Chunk::SIZE_Y||type>=BLOCK_TYPE_COUNT)continue;m_edits[{edit.x,edit.y,edit.z}]=edit.type;}for(const auto& key:loaded)loadChunk(key.x,key.z);}
+void World::applyEditEntries(const std::vector<EditEntry>& entries){std::vector<Key> loaded;loaded.reserve(m_chunks.size());for(const auto& chunk:m_chunks)loaded.push_back(chunk.first);m_chunks.clear();m_pendingTasks.clear();m_edits.clear();m_furnaces.clear();for(const auto& edit:entries){const auto type=static_cast<std::size_t>(edit.type);if(edit.x<0||edit.x>=1000||edit.z<0||edit.z>=1000||edit.y<0||edit.y>=Chunk::SIZE_Y||type>=BLOCK_TYPE_COUNT)continue;m_edits[{edit.x,edit.y,edit.z}]=edit.type;if(edit.type==BlockType::FURNACE)m_furnaces.try_emplace({edit.x,edit.y,edit.z});else m_furnaces.erase({edit.x,edit.y,edit.z});}for(const auto& key:loaded)loadChunk(key.x,key.z);}
 bool World::processNearestTask(ChunkTaskType type,int pcx,int pcz){auto nearest=m_pendingTasks.end();int best=0;for(auto it=m_pendingTasks.begin();it!=m_pendingTasks.end();++it){if(it->type!=type)continue;const int dx=it->position.x-pcx,dz=it->position.y-pcz,distance=dx*dx+dz*dz;if(nearest==m_pendingTasks.end()||distance<best||(distance==best&&std::tie(it->position.y,it->position.x)<std::tie(nearest->position.y,nearest->position.x))){nearest=it;best=distance;}}if(nearest==m_pendingTasks.end())return false;const ChunkTask task=*nearest;m_pendingTasks.erase(nearest);const int x=task.position.x,z=task.position.y;if(type==ChunkTaskType::GENERATE){if(!find(x,z))createChunk(x,z);if(find(x,z))queueTask(x,z,ChunkTaskType::UPDATE_LIGHTING);}else if(auto* chunk=find(x,z)){if(type==ChunkTaskType::UPDATE_LIGHTING){if(chunk->lightingDirty())chunk->computeSkyLight([this](int wx,int y,int wz){return lightingBlock(wx,y,wz);});if(chunk->meshDirty())queueTask(x,z,ChunkTaskType::REBUILD_MESH);}else if(chunk->lightingDirty())queueTask(x,z,ChunkTaskType::UPDATE_LIGHTING);else if(chunk->meshDirty())chunk->generateMesh([this](int wx,int y,int wz){return getBlock(wx,y,wz);});}return true;}
 void World::processPendingTasks(int pcx,int pcz){for(int i=0;i<m_generationBudget&&processNearestTask(ChunkTaskType::GENERATE,pcx,pcz);++i){}for(int i=0;i<m_lightingBudget&&processNearestTask(ChunkTaskType::UPDATE_LIGHTING,pcx,pcz);++i){}for(int i=0;i<m_meshBudget&&processNearestTask(ChunkTaskType::REBUILD_MESH,pcx,pcz);++i){}}
 void World::discardDistantTasks(int pcx,int pcz){m_pendingTasks.erase(std::remove_if(m_pendingTasks.begin(),m_pendingTasks.end(),[&](const ChunkTask& task){return std::abs(task.position.x-pcx)>m_renderDistance+1||std::abs(task.position.y-pcz)>m_renderDistance+1;}),m_pendingTasks.end());}
@@ -72,3 +79,36 @@ void World::update(const glm::vec3&p){int pcx=std::clamp(floorDiv(static_cast<in
 }
 void World::updateLighting(){for(auto& pair:m_chunks)if(pair.second->lightingDirty())pair.second->computeSkyLight([this](int x,int y,int z){return lightingBlock(x,y,z);});}
 void World::render()const{for(const auto&pair:m_chunks)pair.second->render();}
+
+const FurnaceState* World::furnaceAt(const glm::ivec3& p)const{
+  if(getBlock(p.x,p.y,p.z)!=BlockType::FURNACE)return nullptr;
+  const auto it=m_furnaces.find({p.x,p.y,p.z});return it==m_furnaces.end()?nullptr:&it->second;
+}
+bool World::interactFurnace(const glm::ivec3& p,FurnaceSlot slot,ItemStack& cursor){
+  if(!furnaceAt(p))return false;
+  return m_furnaces.at({p.x,p.y,p.z}).interact(slot,cursor);
+}
+void World::tickFurnaces(double dt){
+  for(auto& entry:m_furnaces)if(isChunkLoadedAt(entry.first.x,entry.first.z))entry.second.tick(dt);
+}
+std::vector<World::FurnaceEntry> World::captureFurnaces()const{
+  std::vector<FurnaceEntry> entries;
+  for(const auto& entry:m_furnaces)if(!entry.second.isDefault())entries.push_back({entry.first.x,entry.first.y,entry.first.z,entry.second});
+  std::sort(entries.begin(),entries.end(),[](const FurnaceEntry&a,const FurnaceEntry&b){return std::tie(a.x,a.y,a.z)<std::tie(b.x,b.y,b.z);});
+  return entries;
+}
+bool World::restoreFurnaces(const std::vector<FurnaceEntry>& entries){
+  std::unordered_map<BlockKey,FurnaceState,BlockHash> restored;
+  for(const auto& edit:m_edits)if(edit.second==BlockType::FURNACE)restored.emplace(edit.first,FurnaceState{});
+  std::unordered_map<BlockKey,bool,BlockHash> seen;
+  for(const auto& entry:entries){
+    const BlockKey key{entry.x,entry.y,entry.z};
+    if(!entry.state.valid()||!restored.count(key)||!seen.emplace(key,true).second)return false;
+    restored.at(key)=entry.state;
+  }
+  m_furnaces=std::move(restored);return true;
+}
+void World::visitLoadedFurnaces(const std::function<void(const glm::ivec3&,const FurnaceState&)>& visitor)const{
+  for(const auto& entry:m_furnaces)if(isChunkReady(floorDiv(entry.first.x,16),floorDiv(entry.first.z,16)))
+    visitor({entry.first.x,entry.first.y,entry.first.z},entry.second);
+}

@@ -8,21 +8,28 @@
 #include <cmath>
 #include <limits>
 #include <utility>
+#include <map>
+#include <set>
+#include <tuple>
+#include "../world/FurnaceState.h"
 
 namespace {
-constexpr std::array<char,4> MAGIC_V2={'M','C','v','2'},MAGIC_V3={'M','C','v','3'},MAGIC_V4={'M','C','v','4'},MAGIC_V5={'M','C','v','5'},MAGIC_V6={'M','C','v','6'};
+constexpr std::array<char,4> MAGIC_V2={'M','C','v','2'},MAGIC_V3={'M','C','v','3'},MAGIC_V4={'M','C','v','4'},MAGIC_V5={'M','C','v','5'},MAGIC_V6={'M','C','v','6'},MAGIC_V7={'M','C','v','7'};
 constexpr std::uint32_t MAX_EDIT_COUNT=10000000,MAX_MOB_COUNT=32;
 constexpr int WORLD_SIZE=1000,WORLD_HEIGHT=256;
 
 template<typename T> bool writeValue(std::ostream& out,const T& value){out.write(reinterpret_cast<const char*>(&value),sizeof(value));return static_cast<bool>(out);}
 template<typename T> bool readValue(std::istream& in,T& value){in.read(reinterpret_cast<char*>(&value),sizeof(value));return static_cast<bool>(in);}
-bool validType(BlockType type){return static_cast<std::size_t>(type)<BLOCK_TYPE_COUNT;}
+bool validType(BlockType type,std::uint32_t version=SaveLoad::VERSION){
+  const auto count=version>=7?BLOCK_TYPE_COUNT:static_cast<std::size_t>(version>=5?BlockType::FURNACE:BlockType::BED);
+  return static_cast<std::size_t>(type)<count;
+}
 bool validMode(GameMode mode){return mode==GameMode::Survival||mode==GameMode::Creative;}
 bool validSlot(const SaveData::SlotData& slot,std::uint32_t version=SaveLoad::VERSION){
   if(static_cast<std::size_t>(slot.kind)>static_cast<std::size_t>(version>=3?ItemKind::FOOD:ItemKind::TOOL))return false;
-  if(slot.kind==ItemKind::BLOCK)return validType(slot.blockType)&&slot.count<=Inventory::MAX_STACK_SIZE&&slot.durability==0&&((slot.count==0)==(slot.blockType==BlockType::AIR));
+  if(slot.kind==ItemKind::BLOCK)return validType(slot.blockType,version)&&slot.count<=Inventory::MAX_STACK_SIZE&&slot.durability==0&&((slot.count==0)==(slot.blockType==BlockType::AIR));
   if(slot.kind==ItemKind::MATERIAL){const std::size_t count=version>=4?static_cast<std::size_t>(MaterialType::COUNT):1u;return static_cast<std::size_t>(slot.materialType)<count&&slot.count>0&&slot.count<=Inventory::MAX_STACK_SIZE&&slot.durability==0;}
-  if(slot.kind==ItemKind::FOOD){const std::size_t count=version>=4?static_cast<std::size_t>(FoodType::COUNT):1u;return static_cast<std::size_t>(slot.foodType)<count&&slot.count>0&&slot.count<=Inventory::MAX_STACK_SIZE&&slot.durability==0;}
+  if(slot.kind==ItemKind::FOOD){const std::size_t count=version>=7?static_cast<std::size_t>(FoodType::COUNT):version>=4?static_cast<std::size_t>(FoodType::COOKED_BEEF):1u;return static_cast<std::size_t>(slot.foodType)<count&&slot.count>0&&slot.count<=Inventory::MAX_STACK_SIZE&&slot.durability==0;}
   return static_cast<std::size_t>(slot.toolKind)<static_cast<std::size_t>(ToolKind::COUNT)&&static_cast<std::size_t>(slot.toolTier)<static_cast<std::size_t>(ToolTier::COUNT)&&slot.count==1&&slot.durability>0&&slot.durability<=maxToolDurability(slot.toolTier);
 }
 bool writeSlot(std::ostream& out,const SaveData::SlotData& slot){
@@ -48,6 +55,28 @@ bool validMob(const MobData& mob){return mob.id>0&&static_cast<std::size_t>(mob.
 bool validMobs(const std::vector<MobData>& mobs){if(mobs.size()>MAX_MOB_COUNT)return false;std::vector<MobId> ids;ids.reserve(mobs.size());for(const auto& mob:mobs){if(!validMob(mob)||std::find(ids.begin(),ids.end(),mob.id)!=ids.end())return false;ids.push_back(mob.id);}return true;}
 }
 
+namespace {
+ItemStack furnaceStack(const SaveData::SlotData& s){
+  ItemStack result;result.kind=s.kind;result.blockType=s.blockType;result.materialType=s.materialType;
+  result.foodType=s.foodType;result.toolKind=s.toolKind;result.toolTier=s.toolTier;result.count=s.count;result.durability=s.durability;return result;
+}
+bool validFurnaces(const SaveData& data){
+  if(data.furnaces.size()>data.edits.size())return false;
+  using Position=std::tuple<int,int,int>;
+  std::map<Position,BlockType> blocks;
+  for(const auto& edit:data.edits)blocks[{edit.x,edit.y,edit.z}]=edit.type;
+  std::set<Position> seen;
+  for(const auto& f:data.furnaces){
+    const Position p{f.x,f.y,f.z};const auto block=blocks.find(p);
+    if(f.x<0||f.x>=1000||f.z<0||f.z>=1000||f.y<0||f.y>=256||block==blocks.end()||block->second!=BlockType::FURNACE||!seen.insert(p).second)return false;
+    if(!validSlot(f.input)||!validSlot(f.fuel)||!validSlot(f.output))return false;
+    const FurnaceState state{furnaceStack(f.input),furnaceStack(f.fuel),furnaceStack(f.output),f.fuelRemaining,f.fuelDuration,f.cookProgress};
+    if(!state.valid())return false;
+  }
+  return true;
+}
+}
+
 std::filesystem::path SaveLoad::getSavePath(){
 #ifdef _WIN32
   const char* root=std::getenv("APPDATA");
@@ -60,12 +89,12 @@ std::filesystem::path SaveLoad::getSavePath(){
 
 bool SaveLoad::save(const SaveData& data){return save(data,getSavePath());}
 bool SaveLoad::save(const SaveData& data,const std::filesystem::path& path){
-  if(!validMode(data.mode)||data.selectedSlot<0||data.selectedSlot>=Inventory::HOTBAR_SLOTS||!validSlot(data.cursorStack)||!validSurvival(data)||!validSpawn(data)||data.edits.size()>std::numeric_limits<std::uint32_t>::max()||!validMobs(data.mobs))return false;
+  if(!validFurnaces(data)||!validMode(data.mode)||data.selectedSlot<0||data.selectedSlot>=Inventory::HOTBAR_SLOTS||!validSlot(data.cursorStack)||!validSurvival(data)||!validSpawn(data)||data.edits.size()>std::numeric_limits<std::uint32_t>::max()||!validMobs(data.mobs))return false;
   const auto validCurrentSlot=[](const SaveData::SlotData& slot){return validSlot(slot);};
   if(!std::all_of(data.hotbar.begin(),data.hotbar.end(),validCurrentSlot)||!std::all_of(data.backpack.begin(),data.backpack.end(),validCurrentSlot)||!std::all_of(data.edits.begin(),data.edits.end(),validEdit))return false;
   std::error_code error;if(!path.parent_path().empty())std::filesystem::create_directories(path.parent_path(),error);if(error)return false;
   std::ofstream out(path,std::ios::binary|std::ios::trunc);if(!out)return false;
-  out.write(MAGIC_V6.data(),MAGIC_V6.size());const std::uint32_t version=VERSION,editCount=static_cast<std::uint32_t>(data.edits.size()),mobCount=static_cast<std::uint32_t>(data.mobs.size());const auto mode=static_cast<std::uint8_t>(data.mode);
+  out.write(MAGIC_V7.data(),MAGIC_V7.size());const std::uint32_t version=VERSION,editCount=static_cast<std::uint32_t>(data.edits.size()),mobCount=static_cast<std::uint32_t>(data.mobs.size());const auto mode=static_cast<std::uint8_t>(data.mode);
   if(!out||!writeValue(out,version)||!writeValue(out,data.selectedSlot)||!writeValue(out,mode)||!writeSlot(out,data.cursorStack))return false;
   for(const auto& slot:data.hotbar)if(!writeSlot(out,slot))return false;
   for(const auto& slot:data.backpack)if(!writeSlot(out,slot))return false;
@@ -74,13 +103,18 @@ bool SaveLoad::save(const SaveData& data,const std::filesystem::path& path){
   for(const auto& edit:data.edits){const std::int32_t x=edit.x,y=edit.y,z=edit.z;const auto type=static_cast<std::uint8_t>(edit.type);if(!writeValue(out,x)||!writeValue(out,y)||!writeValue(out,z)||!writeValue(out,type))return false;}
   if(!writeValue(out,mobCount))return false;
   for(const auto& mob:data.mobs){const auto type=static_cast<std::uint8_t>(mob.type);if(!writeValue(out,mob.id)||!writeValue(out,type)||!writeValue(out,mob.x)||!writeValue(out,mob.y)||!writeValue(out,mob.z)||!writeValue(out,mob.yaw)||!writeValue(out,mob.health)||!writeValue(out,mob.age)||!writeValue(out,mob.grazeCooldown))return false;}
+  const auto furnaceCount=static_cast<std::uint32_t>(data.furnaces.size());
+  if(!writeValue(out,furnaceCount))return false;
+  for(const auto& f:data.furnaces){
+    if(!writeValue(out,f.x)||!writeValue(out,f.y)||!writeValue(out,f.z)||!writeSlot(out,f.input)||!writeSlot(out,f.fuel)||!writeSlot(out,f.output)||!writeValue(out,f.fuelRemaining)||!writeValue(out,f.fuelDuration)||!writeValue(out,f.cookProgress))return false;
+  }
   out.flush();return static_cast<bool>(out);
 }
 
 bool SaveLoad::load(SaveData& out){return load(out,getSavePath());}
 bool SaveLoad::load(SaveData& out,const std::filesystem::path& path){
   std::ifstream in(path,std::ios::binary);if(!in)return false;SaveData data;std::array<char,4> magic{};in.read(magic.data(),magic.size());std::uint32_t version=0;
-  if(!in||!readValue(in,version)||!((magic==MAGIC_V2&&version==2)||(magic==MAGIC_V3&&version==3)||(magic==MAGIC_V4&&version==4)||(magic==MAGIC_V5&&version==5)||(magic==MAGIC_V6&&version==6))||!readValue(in,data.selectedSlot)||data.selectedSlot<0||data.selectedSlot>=Inventory::HOTBAR_SLOTS)return false;
+  if(!in||!readValue(in,version)||!((magic==MAGIC_V2&&version==2)||(magic==MAGIC_V3&&version==3)||(magic==MAGIC_V4&&version==4)||(magic==MAGIC_V5&&version==5)||(magic==MAGIC_V6&&version==6)||(magic==MAGIC_V7&&version==7))||!readValue(in,data.selectedSlot)||data.selectedSlot<0||data.selectedSlot>=Inventory::HOTBAR_SLOTS)return false;
   if(version>=6){std::uint8_t mode=0;if(!readValue(in,mode)||mode>static_cast<std::uint8_t>(GameMode::Creative))return false;data.mode=static_cast<GameMode>(mode);}
   if(!readSlot(in,data.cursorStack,version))return false;
   for(auto& slot:data.hotbar)if(!readSlot(in,slot,version))return false;
@@ -88,8 +122,17 @@ bool SaveLoad::load(SaveData& out,const std::filesystem::path& path){
   if(version>=3&&(!readValue(in,data.health)||!readValue(in,data.hunger)||!readValue(in,data.saturation)||!readValue(in,data.exhaustion)||!validSurvival(data)))return false;
   if(version>=5&&(!readValue(in,data.spawnX)||!readValue(in,data.spawnY)||!readValue(in,data.spawnZ)||!validSpawn(data)))return false;
   std::uint32_t editCount=0;if(!readValue(in,editCount)||editCount>MAX_EDIT_COUNT)return false;data.edits.reserve(editCount);
-  for(std::uint32_t i=0;i<editCount;++i){std::int32_t x=0,y=0,z=0;std::uint8_t type=0;if(!readValue(in,x)||!readValue(in,y)||!readValue(in,z)||!readValue(in,type))return false;SaveData::EditData edit{x,y,z,static_cast<BlockType>(type)};if(!validEdit(edit))return false;data.edits.push_back(edit);}
+  for(std::uint32_t i=0;i<editCount;++i){std::int32_t x=0,y=0,z=0;std::uint8_t type=0;if(!readValue(in,x)||!readValue(in,y)||!readValue(in,z)||!readValue(in,type))return false;SaveData::EditData edit{x,y,z,static_cast<BlockType>(type)};if(!validEdit(edit)||!validType(edit.type,version))return false;data.edits.push_back(edit);}
   if(version>=4){std::uint32_t mobCount=0;if(!readValue(in,mobCount)||mobCount>MAX_MOB_COUNT)return false;data.mobs.reserve(mobCount);for(std::uint32_t i=0;i<mobCount;++i){MobData mob;std::uint8_t type=0;if(!readValue(in,mob.id)||!readValue(in,type)||!readValue(in,mob.x)||!readValue(in,mob.y)||!readValue(in,mob.z)||!readValue(in,mob.yaw)||!readValue(in,mob.health)||!readValue(in,mob.age)||!readValue(in,mob.grazeCooldown))return false;mob.type=static_cast<MobType>(type);data.mobs.push_back(mob);}if(!validMobs(data.mobs))return false;}
+  if(version>=7){
+    std::uint32_t count=0;if(!readValue(in,count)||count>data.edits.size())return false;
+    for(std::uint32_t i=0;i<count;++i){
+      SaveData::FurnaceData f;
+      if(!readValue(in,f.x)||!readValue(in,f.y)||!readValue(in,f.z)||!readSlot(in,f.input,version)||!readSlot(in,f.fuel,version)||!readSlot(in,f.output,version)||!readValue(in,f.fuelRemaining)||!readValue(in,f.fuelDuration)||!readValue(in,f.cookProgress))return false;
+      data.furnaces.push_back(f);
+    }
+    if(!validFurnaces(data))return false;
+  }
   if(in.peek()!=std::char_traits<char>::eof())return false;
   out=std::move(data);return true;
 }

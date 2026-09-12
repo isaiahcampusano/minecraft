@@ -1,5 +1,7 @@
 #pragma once
 #include "Chunk.h"
+#include "FurnaceState.h"
+#include <functional>
 #include <glm/glm.hpp>
 #include <memory>
 #include <cstddef>
@@ -17,7 +19,15 @@ public:
   BlockType getBlock(int x,int y,int z)const;
   std::uint8_t skyLight(int x,int y,int z)const;
   bool isChunkLoadedAt(int x,int z)const;
-  bool setBlock(int x,int y,int z,BlockType type);
+  using FurnaceDropHandler=std::function<void(const glm::vec3&,const ItemStack&)>;
+  struct FurnaceEntry { int x,y,z; FurnaceState state; };
+  bool setBlock(int x,int y,int z,BlockType type,const FurnaceDropHandler& dropContents={});
+  const FurnaceState* furnaceAt(const glm::ivec3& position)const;
+  bool interactFurnace(const glm::ivec3& position,FurnaceSlot slot,ItemStack& cursor);
+  void tickFurnaces(double dt);
+  std::vector<FurnaceEntry> captureFurnaces()const;
+  bool restoreFurnaces(const std::vector<FurnaceEntry>& entries);
+  void visitLoadedFurnaces(const std::function<void(const glm::ivec3&,const FurnaceState&)>& visitor)const;
   void loadChunk(int cx,int cz);
   bool unloadChunk(int cx,int cz);
   bool isChunkReady(int cx,int cz)const;
@@ -35,6 +45,7 @@ private:
   struct BlockHash{std::size_t operator()(const BlockKey&k)const;};
   std::unordered_map<Key,std::unique_ptr<Chunk>,Hash> m_chunks; int m_renderDistance=4;
   std::unordered_map<BlockKey,BlockType,BlockHash> m_edits;
+  std::unordered_map<BlockKey,FurnaceState,BlockHash> m_furnaces;
   std::vector<ChunkTask> m_pendingTasks;
   int m_generationBudget=1,m_lightingBudget=1,m_meshBudget=1;
   static int floorDiv(int value,int divisor);
