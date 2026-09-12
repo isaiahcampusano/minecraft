@@ -9,6 +9,7 @@
 #include "../world/LootTable.h"
 #include "../world/PassiveMobSystem.h"
 #include "DayNightCycle.h"
+#include "SettingsState.h"
 #include <GLFW/glfw3.h>
 #include <memory>
 
@@ -16,11 +17,18 @@ class Application {
 public:
   Application(); ~Application(); void run();
 private:
+  enum class MenuState { Gameplay, Pause, Settings, Keybinds };
   GLFWwindow* m_window=nullptr; Player m_player; PlayerCamera m_camera; World m_world; Inventory m_inventory; PassiveMobSystem m_mobs; DayNightCycle m_dayNight; std::unique_ptr<Renderer> m_renderer;
   bool m_captured=true,m_firstMouse=true,m_inventoryOpen=false,m_tableOpen=false,m_inventoryDragging=false;
+  MenuState m_menu=MenuState::Gameplay;
+  SettingsState m_settings;
+  bool m_menuMouseReleaseRequired=false;
+  int m_keybindCapture=-1;
   SprintState m_sprint; EatingState m_eating; LootTable m_loot; bool m_leftMouseWasDown=false,m_primaryAttackConsumed=false,m_miningAnimation=false;
   double m_lastX=0,m_lastY=0; float m_clickCooldown=0,m_attackCooldown=0,m_useSwingTimer=0; int m_creativePage=0;
   void setInventoryOpen(bool open,bool table=false);
+  void setMenu(MenuState menu);
+  void handleMenuClick(double x,double y,int width,int height);
   void input(float dt);
   void updateMining(float dt,const glm::vec3& origin,const glm::vec3& direction,const RayHit& blockHit);
   void updateEating(float dt);

@@ -18,6 +18,7 @@ void World::loadChunk(int x,int z){createChunk(x,z);}
 bool World::unloadChunk(int x,int z){if(!m_chunks.erase({x,z}))return false;m_pendingTasks.erase(std::remove_if(m_pendingTasks.begin(),m_pendingTasks.end(),[&](const ChunkTask& task){return task.position==glm::ivec2{x,z};}),m_pendingTasks.end());markNeighbors(x,z);return true;}
 bool World::isChunkReady(int x,int z)const{const auto* chunk=find(x,z);return chunk&&chunk->ready();}
 void World::setTaskBudgets(int generation,int lighting,int mesh){m_generationBudget=std::max(0,generation);m_lightingBudget=std::max(0,lighting);m_meshBudget=std::max(0,mesh);}
+void World::setViewDistance(int distance){m_renderDistance=std::clamp(distance,2,8);m_pendingTasks.erase(std::remove_if(m_pendingTasks.begin(),m_pendingTasks.end(),[this](const ChunkTask& task){return std::abs(task.position.x)>63||std::abs(task.position.y)>63;}),m_pendingTasks.end());}
 void World::queueTask(int x,int z,ChunkTaskType type){if(x<0||z<0||x>62||z>62)return;const glm::ivec2 position{x,z};if(std::none_of(m_pendingTasks.begin(),m_pendingTasks.end(),[&](const ChunkTask& task){return task.type==type&&task.position==position;}))m_pendingTasks.push_back({type,position});}
 void World::markNeighbors(int x,int z){
   for(int dz=-1;dz<=1;++dz)for(int dx=-1;dx<=1;++dx){
@@ -71,4 +72,3 @@ void World::update(const glm::vec3&p){int pcx=std::clamp(floorDiv(static_cast<in
 }
 void World::updateLighting(){for(auto& pair:m_chunks)if(pair.second->lightingDirty())pair.second->computeSkyLight([this](int x,int y,int z){return lightingBlock(x,y,z);});}
 void World::render()const{for(const auto&pair:m_chunks)pair.second->render();}
-
