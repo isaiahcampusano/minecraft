@@ -13,6 +13,10 @@ void DayNightCycle::update(float dt){
   m_time=std::fmod(m_time+std::max(dt,0.f)/DAY_LENGTH_SECONDS,1.f);
 }
 
+bool DayNightCycle::isNight() const {
+  return m_time >= NIGHT_START || m_time < .05f;
+}
+
 float DayNightCycle::daylight()const{
   float sun=std::clamp(std::sin(m_time*2.f*PI)*1.4f,0.f,1.f);
   return .12f+.88f*smooth(sun);

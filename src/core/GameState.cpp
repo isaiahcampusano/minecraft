@@ -14,6 +14,7 @@ SaveData GameState::capture(const Inventory& inventory,const World& world,const 
   for(int i=0;i<Inventory::HOTBAR_SLOTS;++i)data.hotbar[static_cast<std::size_t>(i)]=saveSlot(inventory.hotbarSlot(i));
   for(int i=0;i<Inventory::BACKPACK_SLOTS;++i)data.backpack[static_cast<std::size_t>(i)]=saveSlot(inventory.backpackSlot(i));
   data.health=player.survival.health();data.hunger=player.survival.hunger();data.saturation=player.survival.saturation();data.exhaustion=player.survival.exhaustion();
+  data.spawnX=player.spawnPosition().x;data.spawnY=player.spawnPosition().y;data.spawnZ=player.spawnPosition().z;
   for(const auto& edit:world.getEditEntries())data.edits.push_back({edit.x,edit.y,edit.z,edit.type});
   data.mobs=mobs.capture();
   return data;
@@ -24,6 +25,7 @@ void GameState::apply(const SaveData& data,Inventory& inventory,World& world,Pla
   for(int i=0;i<Inventory::HOTBAR_SLOTS;++i)inventory.setHotbarSlot(i,itemStack(data.hotbar[static_cast<std::size_t>(i)]));
   for(int i=0;i<Inventory::BACKPACK_SLOTS;++i)inventory.setBackpackSlot(i,itemStack(data.backpack[static_cast<std::size_t>(i)]));
   player.survival.restore(data.health,data.hunger,data.saturation,data.exhaustion);
+  player.setSpawnPosition({data.spawnX,data.spawnY,data.spawnZ});
   std::vector<World::EditEntry> edits;edits.reserve(data.edits.size());for(const auto& edit:data.edits)edits.push_back({edit.x,edit.y,edit.z,edit.type});world.applyEditEntries(edits);
   if(!mobs.restore(data.mobs))mobs.clear();
 }
