@@ -24,6 +24,8 @@ public:
   std::size_t loadedChunkCount()const{return m_chunks.size();}
   std::size_t pendingTaskCount()const{return m_pendingTasks.size();}
   void setTaskBudgets(int generation,int lighting,int mesh);
+  int viewDistance() const { return m_renderDistance; }
+  void setViewDistance(int distance);
   std::vector<EditEntry> getEditEntries()const;
   void applyEditEntries(const std::vector<EditEntry>& entries);
 private:
@@ -46,4 +48,3 @@ private:
   void invalidateLightingAt(int x,int z);
   BlockType lightingBlock(int x,int y,int z)const;
 };
-

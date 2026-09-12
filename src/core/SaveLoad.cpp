@@ -10,13 +10,14 @@
 #include <utility>
 
 namespace {
-constexpr std::array<char,4> MAGIC_V2={'M','C','v','2'},MAGIC_V3={'M','C','v','3'},MAGIC_V4={'M','C','v','4'},MAGIC_V5={'M','C','v','5'};
+constexpr std::array<char,4> MAGIC_V2={'M','C','v','2'},MAGIC_V3={'M','C','v','3'},MAGIC_V4={'M','C','v','4'},MAGIC_V5={'M','C','v','5'},MAGIC_V6={'M','C','v','6'};
 constexpr std::uint32_t MAX_EDIT_COUNT=10000000,MAX_MOB_COUNT=32;
 constexpr int WORLD_SIZE=1000,WORLD_HEIGHT=256;
 
 template<typename T> bool writeValue(std::ostream& out,const T& value){out.write(reinterpret_cast<const char*>(&value),sizeof(value));return static_cast<bool>(out);}
 template<typename T> bool readValue(std::istream& in,T& value){in.read(reinterpret_cast<char*>(&value),sizeof(value));return static_cast<bool>(in);}
 bool validType(BlockType type){return static_cast<std::size_t>(type)<BLOCK_TYPE_COUNT;}
+bool validMode(GameMode mode){return mode==GameMode::Survival||mode==GameMode::Creative;}
 bool validSlot(const SaveData::SlotData& slot,std::uint32_t version=SaveLoad::VERSION){
   if(static_cast<std::size_t>(slot.kind)>static_cast<std::size_t>(version>=3?ItemKind::FOOD:ItemKind::TOOL))return false;
   if(slot.kind==ItemKind::BLOCK)return validType(slot.blockType)&&slot.count<=Inventory::MAX_STACK_SIZE&&slot.durability==0&&((slot.count==0)==(slot.blockType==BlockType::AIR));
@@ -59,13 +60,13 @@ std::filesystem::path SaveLoad::getSavePath(){
 
 bool SaveLoad::save(const SaveData& data){return save(data,getSavePath());}
 bool SaveLoad::save(const SaveData& data,const std::filesystem::path& path){
-  if(data.selectedSlot<0||data.selectedSlot>=Inventory::HOTBAR_SLOTS||!validSlot(data.cursorStack)||!validSurvival(data)||!validSpawn(data)||data.edits.size()>std::numeric_limits<std::uint32_t>::max()||!validMobs(data.mobs))return false;
+  if(!validMode(data.mode)||data.selectedSlot<0||data.selectedSlot>=Inventory::HOTBAR_SLOTS||!validSlot(data.cursorStack)||!validSurvival(data)||!validSpawn(data)||data.edits.size()>std::numeric_limits<std::uint32_t>::max()||!validMobs(data.mobs))return false;
   const auto validCurrentSlot=[](const SaveData::SlotData& slot){return validSlot(slot);};
   if(!std::all_of(data.hotbar.begin(),data.hotbar.end(),validCurrentSlot)||!std::all_of(data.backpack.begin(),data.backpack.end(),validCurrentSlot)||!std::all_of(data.edits.begin(),data.edits.end(),validEdit))return false;
   std::error_code error;if(!path.parent_path().empty())std::filesystem::create_directories(path.parent_path(),error);if(error)return false;
   std::ofstream out(path,std::ios::binary|std::ios::trunc);if(!out)return false;
-  out.write(MAGIC_V5.data(),MAGIC_V5.size());const std::uint32_t version=VERSION,editCount=static_cast<std::uint32_t>(data.edits.size()),mobCount=static_cast<std::uint32_t>(data.mobs.size());
-  if(!out||!writeValue(out,version)||!writeValue(out,data.selectedSlot)||!writeSlot(out,data.cursorStack))return false;
+  out.write(MAGIC_V6.data(),MAGIC_V6.size());const std::uint32_t version=VERSION,editCount=static_cast<std::uint32_t>(data.edits.size()),mobCount=static_cast<std::uint32_t>(data.mobs.size());const auto mode=static_cast<std::uint8_t>(data.mode);
+  if(!out||!writeValue(out,version)||!writeValue(out,data.selectedSlot)||!writeValue(out,mode)||!writeSlot(out,data.cursorStack))return false;
   for(const auto& slot:data.hotbar)if(!writeSlot(out,slot))return false;
   for(const auto& slot:data.backpack)if(!writeSlot(out,slot))return false;
   if(!writeValue(out,data.health)||!writeValue(out,data.hunger)||!writeValue(out,data.saturation)||!writeValue(out,data.exhaustion)||!writeValue(out,data.spawnX)||!writeValue(out,data.spawnY)||!writeValue(out,data.spawnZ))return false;
@@ -79,7 +80,9 @@ bool SaveLoad::save(const SaveData& data,const std::filesystem::path& path){
 bool SaveLoad::load(SaveData& out){return load(out,getSavePath());}
 bool SaveLoad::load(SaveData& out,const std::filesystem::path& path){
   std::ifstream in(path,std::ios::binary);if(!in)return false;SaveData data;std::array<char,4> magic{};in.read(magic.data(),magic.size());std::uint32_t version=0;
-  if(!in||!readValue(in,version)||!((magic==MAGIC_V2&&version==2)||(magic==MAGIC_V3&&version==3)||(magic==MAGIC_V4&&version==4)||(magic==MAGIC_V5&&version==VERSION))||!readValue(in,data.selectedSlot)||data.selectedSlot<0||data.selectedSlot>=Inventory::HOTBAR_SLOTS||!readSlot(in,data.cursorStack,version))return false;
+  if(!in||!readValue(in,version)||!((magic==MAGIC_V2&&version==2)||(magic==MAGIC_V3&&version==3)||(magic==MAGIC_V4&&version==4)||(magic==MAGIC_V5&&version==5)||(magic==MAGIC_V6&&version==6))||!readValue(in,data.selectedSlot)||data.selectedSlot<0||data.selectedSlot>=Inventory::HOTBAR_SLOTS)return false;
+  if(version>=6){std::uint8_t mode=0;if(!readValue(in,mode)||mode>static_cast<std::uint8_t>(GameMode::Creative))return false;data.mode=static_cast<GameMode>(mode);}
+  if(!readSlot(in,data.cursorStack,version))return false;
   for(auto& slot:data.hotbar)if(!readSlot(in,slot,version))return false;
   for(auto& slot:data.backpack)if(!readSlot(in,slot,version))return false;
   if(version>=3&&(!readValue(in,data.health)||!readValue(in,data.hunger)||!readValue(in,data.saturation)||!readValue(in,data.exhaustion)||!validSurvival(data)))return false;

@@ -70,3 +70,16 @@ A missing, unsupported, or corrupted save is ignored and starts a fresh world.
 - **Save location** — kept at the bottom for quick reference.
 
 You can copy this directly into your `README.md`. The build instructions, controls, and save path remain accurate to your repo.
+# Menus, modes, and controls
+
+Escape opens the pause menu (and closes inventory first). Settings provide Survival
+and Creative mode selection, a 2-8 chunk view-distance setting, and keyboard
+remapping. Defaults are WASD movement, Space jump, Left Shift sprint, E inventory,
+F flight toggle, Left Control fly-down, F5 perspective, and number keys 1-9 for
+the hotbar. Escape remains reserved and duplicate bindings are rejected.
+
+Creative preserves the shared inventory, hides Survival health and hunger, permits
+flight, unlimited placement, and immediate block breaking without drops or tool
+wear. Survival retains hunger, damage, drops, and fall damage. Preferences are
+stored separately in `settings.cfg`; worlds use MCv6 and retain migration support
+for MCv2 through MCv5 (older worlds load in Survival).

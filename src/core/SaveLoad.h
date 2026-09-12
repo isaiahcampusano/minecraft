@@ -1,6 +1,7 @@
 #pragma once
 #include "../player/Item.h"
 #include "../world/PassiveMob.h"
+#include "GameMode.h"
 #include <array>
 #include <cstdint>
 #include <filesystem>
@@ -13,6 +14,7 @@ struct SaveData {
   };
   struct EditData { std::int32_t x=0,y=0,z=0; BlockType type=BlockType::AIR; };
   std::int32_t selectedSlot=0;
+  GameMode mode=GameMode::Survival;
   SlotData cursorStack{};
   std::array<SlotData,9> hotbar{};
   std::array<SlotData,27> backpack{};
@@ -25,7 +27,7 @@ struct SaveData {
 
 class SaveLoad {
 public:
-  static constexpr std::uint32_t VERSION=5;
+  static constexpr std::uint32_t VERSION=6;
   static bool save(const SaveData& data);
   static bool save(const SaveData& data,const std::filesystem::path& path);
   static bool load(SaveData& out);
