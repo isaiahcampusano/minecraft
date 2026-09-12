@@ -16,6 +16,7 @@ SaveData GameState::capture(const Inventory& inventory,const World& world,const 
   data.health=player.survival.health();data.hunger=player.survival.hunger();data.saturation=player.survival.saturation();data.exhaustion=player.survival.exhaustion();
   data.spawnX=player.spawnPosition().x;data.spawnY=player.spawnPosition().y;data.spawnZ=player.spawnPosition().z;
   for(const auto& edit:world.getEditEntries())data.edits.push_back({edit.x,edit.y,edit.z,edit.type});
+  for(const auto& f:world.captureFurnaces())data.furnaces.push_back({f.x,f.y,f.z,saveSlot(f.state.inputSlot),saveSlot(f.state.fuelSlot),saveSlot(f.state.outputSlot),f.state.fuelRemaining,f.state.fuelDuration,f.state.cookProgress});
   data.mobs=mobs.capture();
   return data;
 }
@@ -29,5 +30,8 @@ void GameState::apply(const SaveData& data,Inventory& inventory,World& world,Pla
   player.survival.restore(data.health,data.hunger,data.saturation,data.exhaustion);
   player.setSpawnPosition({data.spawnX,data.spawnY,data.spawnZ});
   std::vector<World::EditEntry> edits;edits.reserve(data.edits.size());for(const auto& edit:data.edits)edits.push_back({edit.x,edit.y,edit.z,edit.type});world.applyEditEntries(edits);
+  std::vector<World::FurnaceEntry> furnaces;
+  for(const auto& f:data.furnaces)furnaces.push_back({f.x,f.y,f.z,{itemStack(f.input),itemStack(f.fuel),itemStack(f.output),f.fuelRemaining,f.fuelDuration,f.cookProgress}});
+  world.restoreFurnaces(furnaces);
   if(!mobs.restore(data.mobs))mobs.clear();
 }
