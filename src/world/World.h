@@ -11,6 +11,9 @@ public:
   enum class ChunkTaskType{GENERATE,UPDATE_LIGHTING,REBUILD_MESH};
   struct ChunkTask{ChunkTaskType type;glm::ivec2 position;};
   struct EditEntry{int x,y,z;BlockType type;};
+  explicit World(std::uint32_t seed=0):m_seed(seed){}
+  std::uint32_t seed()const{return m_seed;}
+  void reset(std::uint32_t seed=0){m_chunks.clear();m_edits.clear();m_furnaces.clear();m_pendingTasks.clear();m_seed=seed;}
   void update(const glm::vec3& player);
   void updateLighting();
   void render()const;
@@ -36,6 +39,7 @@ private:
   std::unordered_map<Key,std::unique_ptr<Chunk>,Hash> m_chunks; int m_renderDistance=4;
   std::unordered_map<BlockKey,BlockType,BlockHash> m_edits;
   std::vector<ChunkTask> m_pendingTasks;
+  std::uint32_t m_seed=0;
   int m_generationBudget=1,m_lightingBudget=1,m_meshBudget=1;
   static int floorDiv(int value,int divisor);
   Chunk* find(int cx,int cz); const Chunk* find(int cx,int cz)const;

@@ -13,7 +13,7 @@ std::size_t World::BlockHash::operator()(const BlockKey& k)const{
 }
 Chunk* World::find(int x,int z){auto it=m_chunks.find({x,z});return it==m_chunks.end()?nullptr:it->second.get();}
 const Chunk* World::find(int x,int z)const{auto it=m_chunks.find({x,z});return it==m_chunks.end()?nullptr:it->second.get();}
-void World::createChunk(int x,int z){if(x<0||z<0||x>62||z>62||find(x,z))return;auto c=std::make_unique<Chunk>(glm::ivec2{x,z});WorldGenerator::generateFlatWorld(*c);for(const auto& edit:m_edits)if(floorDiv(edit.first.x,16)==x&&floorDiv(edit.first.z,16)==z)c->setBlock(edit.first.x-x*16,edit.first.y,edit.first.z-z*16,edit.second);m_chunks.emplace(Key{x,z},std::move(c));markNeighbors(x,z);}
+void World::createChunk(int x,int z){if(x<0||z<0||x>62||z>62||find(x,z))return;auto c=std::make_unique<Chunk>(glm::ivec2{x,z});WorldGenerator::generateFlatWorld(*c,m_seed);for(const auto& edit:m_edits)if(floorDiv(edit.first.x,16)==x&&floorDiv(edit.first.z,16)==z)c->setBlock(edit.first.x-x*16,edit.first.y,edit.first.z-z*16,edit.second);m_chunks.emplace(Key{x,z},std::move(c));markNeighbors(x,z);}
 void World::loadChunk(int x,int z){createChunk(x,z);}
 bool World::unloadChunk(int x,int z){if(!m_chunks.erase({x,z}))return false;m_pendingTasks.erase(std::remove_if(m_pendingTasks.begin(),m_pendingTasks.end(),[&](const ChunkTask& task){return task.position==glm::ivec2{x,z};}),m_pendingTasks.end());markNeighbors(x,z);return true;}
 bool World::isChunkReady(int x,int z)const{const auto* chunk=find(x,z);return chunk&&chunk->ready();}

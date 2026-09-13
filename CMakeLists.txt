@@ -17,7 +17,7 @@ glad_add_library(glad_gl_core_33 REPRODUCIBLE API gl:core=3.3)
 
 add_executable(Minecraft
   src/main.cpp
-  src/core/Application.cpp src/core/Camera.cpp src/core/Shader.cpp src/core/DayNightCycle.cpp src/core/SaveLoad.cpp src/core/SettingsState.cpp src/core/GameState.cpp
+  src/core/Application.cpp src/core/ApplicationMenus.cpp src/core/WorldRepository.cpp src/core/Camera.cpp src/core/Shader.cpp src/core/DayNightCycle.cpp src/core/SaveLoad.cpp src/core/SettingsState.cpp src/core/GameState.cpp
   src/player/Player.cpp src/player/PlayerPhysics.cpp src/player/PlayerCamera.cpp src/player/PlayerAnimator.cpp src/player/Inventory.cpp src/player/CraftingRecipe.cpp src/player/SurvivalState.cpp
   src/renderer/Mesh.cpp src/renderer/Renderer.cpp src/renderer/Texture.cpp src/renderer/CuboidMesh.cpp src/renderer/PlayerRenderer.cpp src/renderer/MobRenderer.cpp src/renderer/ParticleSystem.cpp src/renderer/DropSystem.cpp
   src/world/Chunk.cpp src/world/World.cpp src/world/WorldGenerator.cpp src/world/BlockProperties.cpp src/world/Pathfinder.cpp src/world/PassiveMobSystem.cpp
@@ -139,4 +139,49 @@ if(BUILD_TESTING)
   target_include_directories(MobMovementTests PRIVATE src)
   target_link_libraries(MobMovementTests PRIVATE glad_gl_core_33 glm::glm)
   add_test(NAME mob_movement COMMAND MobMovementTests)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(FurnaceTickTests tests/FurnaceTickTests.cpp src/player/CraftingRecipe.cpp src/player/SurvivalState.cpp src/world/BlockProperties.cpp)
+  target_include_directories(FurnaceTickTests PRIVATE src)
+  add_test(NAME furnace_tick COMMAND FurnaceTickTests)
+  add_executable(FurnacePersistenceTests tests/FurnacePersistenceTests.cpp src/core/SaveLoad.cpp src/world/World.cpp src/world/WorldGenerator.cpp src/world/Chunk.cpp src/renderer/Mesh.cpp src/core/Shader.cpp)
+  target_include_directories(FurnacePersistenceTests PRIVATE src)
+  target_link_libraries(FurnacePersistenceTests PRIVATE glad_gl_core_33 glm::glm)
+  add_test(NAME furnace_persistence COMMAND FurnacePersistenceTests)
+endif()
+
+if(BUILD_TESTING)
+  get_target_property(furnace_render_sources Minecraft SOURCES)
+  list(REMOVE_ITEM furnace_render_sources src/main.cpp src/core/Application.cpp src/core/ApplicationMenus.cpp)
+  add_executable(FurnaceRenderTests tests/FurnaceRenderTests.cpp ${furnace_render_sources})
+  target_include_directories(FurnaceRenderTests PRIVATE src)
+  target_link_libraries(FurnaceRenderTests PRIVATE glfw glad_gl_core_33 glm::glm)
+  add_test(NAME furnace_render COMMAND FurnaceRenderTests)
+  set_tests_properties(furnace_render PROPERTIES SKIP_RETURN_CODE 77)
+endif()
+
+if(BUILD_TESTING)
+  get_target_property(cooking_application_sources Minecraft SOURCES)
+  list(REMOVE_ITEM cooking_application_sources src/main.cpp)
+  add_executable(CookingApplicationTests tests/CookingApplicationTests.cpp ${cooking_application_sources})
+  target_include_directories(CookingApplicationTests PRIVATE src)
+  target_link_libraries(CookingApplicationTests PRIVATE glfw glad_gl_core_33 glm::glm)
+  add_test(NAME cooking_application COMMAND CookingApplicationTests)
+  set_tests_properties(cooking_application PROPERTIES SKIP_RETURN_CODE 77)
+endif()
+if(BUILD_TESTING)
+  add_executable(MenuCoreTests tests/MenuCoreTests.cpp src/core/SettingsState.cpp src/core/SaveLoad.cpp src/core/WorldRepository.cpp)
+  target_include_directories(MenuCoreTests PRIVATE src)
+  target_link_libraries(MenuCoreTests PRIVATE glfw glm::glm)
+  add_test(NAME menu_core COMMAND MenuCoreTests)
+  add_executable(SeedSneakTests tests/SeedSneakTests.cpp src/player/Player.cpp src/player/PlayerPhysics.cpp src/player/SurvivalState.cpp src/world/World.cpp src/world/WorldGenerator.cpp src/world/Chunk.cpp src/renderer/Mesh.cpp src/core/Shader.cpp)
+  target_include_directories(SeedSneakTests PRIVATE src)
+  target_link_libraries(SeedSneakTests PRIVATE glad_gl_core_33 glm::glm)
+  add_test(NAME seed_sneak COMMAND SeedSneakTests)
+  add_executable(MenusApplicationTests tests/MenusApplicationTests.cpp ${cooking_application_sources})
+  target_include_directories(MenusApplicationTests PRIVATE src)
+  target_link_libraries(MenusApplicationTests PRIVATE glfw glad_gl_core_33 glm::glm)
+  add_test(NAME menus_application COMMAND MenusApplicationTests)
+  set_tests_properties(menus_application PROPERTIES SKIP_RETURN_CODE 77)
 endif()

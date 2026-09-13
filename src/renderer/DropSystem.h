@@ -19,6 +19,7 @@ public:
   DropSystem(const DropSystem&)=delete;
   DropSystem& operator=(const DropSystem&)=delete;
 
+  bool tryThrow(const glm::vec3&,const glm::vec3&,const ItemStack&,const World&);
   void spawn(const glm::vec3& position,const ItemStack& stack);
   void update(float dt,const World& world,const glm::vec3& playerPosition,const PickupHandler& tryPickup);
   void render(const glm::mat4& view,const glm::mat4& projection,const Texture& atlas,float daylight);
