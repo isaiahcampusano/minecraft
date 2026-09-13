@@ -39,11 +39,14 @@ The tests verify:
 
 ## Camera and regression checks
 
-- [ ] `F5` switches between first and third person.
+- [ ] `F5` cycles first person -> third person (back) -> third person (front) -> first person.
 - [ ] First person does not render the body into the camera.
-- [ ] Third person shows the complete model from an offset angle.
-- [ ] Camera does not render inside or through solid geometry when the player is against a wall, under a low ceiling, or standing at map edges in third person.
-- [ ] WASD, sprint, jump, flight, collision, and holes still work.
+- [ ] Third-person back shows the complete model from an offset angle behind the player.
+- [ ] Third-person front shows the complete model from in front, framed dead-center ("selfie" view), with the player still facing away from this camera.
+- [ ] Camera does not render inside or through solid geometry in either third-person mode, whether the player is against a wall, under a low ceiling, or standing at map edges.
+- [ ] The crosshair-targeted block (outline box, crack overlay, break/place result) matches the player's actual look direction in all three POV modes — including third-person front, where the drawn camera itself faces backward relative to that direction.
+- [ ] Mob attacks in third-person front hit what the player is actually facing, not whatever is behind the player toward the camera.
+- [ ] WASD, sprint, jump, flight, collision, and holes still work, and movement stays relative to the player's own facing (mouse-controlled) in all three POV modes rather than to the on-screen camera.
 - [ ] Block targeting, breaking, placement, HUD, fog, and world rendering still work.
 
 ## Sign-off
