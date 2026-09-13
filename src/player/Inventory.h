@@ -1,6 +1,8 @@
 #pragma once
 #include "Item.h"
 #include <array>
+#include <utility>
+#include <vector>
 
 class Inventory {
 public:
@@ -9,6 +11,7 @@ public:
   static constexpr int CREATIVE_STACK_SIZE = 64;
   static constexpr int MAX_STACK_SIZE = 64;
   static constexpr int SLOT_COUNT = HOTBAR_SLOTS;
+  enum class Area:unsigned char{HOTBAR,BACKPACK,PERSONAL_CRAFT,TABLE_CRAFT};
   bool add(BlockType type);
   bool add(const ItemStack& stack);
   bool consumeSelected();
@@ -34,13 +37,23 @@ public:
   void setCursorStack(const ItemStack& stack);
   void setHotbarSlot(int i,const ItemStack& stack);
   void setBackpackSlot(int i,const ItemStack& stack);
+  void rightClick(Area area,int i);
+  void beginDrag(bool rightButton);
+  void dragOver(Area area,int i);
+  void endDrag();
+  int dragSlotCount()const{return static_cast<int>(m_dragSlots.size());}
+  bool isDragging()const{return m_dragActive;}
 private:
   static ItemStack normalized(const ItemStack& stack);
   template<std::size_t N> static bool addTo(std::array<ItemStack,N>& slots,const ItemStack& stack);
+  ItemStack* slotAt(Area area,int i);
+  bool isValidDragTarget(const ItemStack& slot)const;
   std::array<ItemStack,HOTBAR_SLOTS> m_hotbar{};
   std::array<ItemStack,BACKPACK_SLOTS> m_backpack{};
   ItemStack m_cursorStack{};
   std::array<ItemStack,9> m_personalCraft{};
   std::array<ItemStack,9> m_tableCraft{};
   int m_selected = 0;
+  bool m_dragActive=false,m_dragRight=false;
+  std::vector<std::pair<Area,int>> m_dragSlots;
 };

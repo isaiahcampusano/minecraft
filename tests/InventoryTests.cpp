@@ -53,5 +53,41 @@ int main() {
 
   inventory.select(-10); if (inventory.selectedSlot() != 0) return fail("negative selection was not clamped");
   inventory.select(99); if (inventory.selectedSlot() != Inventory::HOTBAR_SLOTS - 1) return fail("high selection was not clamped");
+
+  Inventory rightClick;rightClick.setHotbarSlot(0,ItemStack::block(BlockType::STONE,5));
+  rightClick.rightClick(Inventory::Area::HOTBAR,0);
+  if(rightClick.cursorStack().count!=3||rightClick.hotbarSlot(0).count!=2)return fail("right-click on an empty cursor did not pick up half, rounded up");
+  rightClick.rightClick(Inventory::Area::HOTBAR,1);
+  if(rightClick.hotbarSlot(1).count!=1||rightClick.hotbarSlot(1).blockType!=BlockType::STONE||rightClick.cursorStack().count!=2)return fail("right-click with a held stack did not place a single item into an empty slot");
+  rightClick.rightClick(Inventory::Area::HOTBAR,1);
+  if(rightClick.hotbarSlot(1).count!=2||rightClick.cursorStack().count!=1)return fail("right-click did not add a single item onto a matching stack");
+
+  Inventory leftDrag;leftDrag.setCursorStack(ItemStack::block(BlockType::DIRT,6));
+  leftDrag.beginDrag(false);
+  leftDrag.dragOver(Inventory::Area::HOTBAR,0);leftDrag.dragOver(Inventory::Area::HOTBAR,1);leftDrag.dragOver(Inventory::Area::HOTBAR,2);
+  leftDrag.dragOver(Inventory::Area::HOTBAR,0);
+  if(leftDrag.dragSlotCount()!=3)return fail("left-drag recorded a slot more than once");
+  leftDrag.endDrag();
+  if(leftDrag.hotbarSlot(0).count!=2||leftDrag.hotbarSlot(1).count!=2||leftDrag.hotbarSlot(2).count!=2||!leftDrag.cursorStack().empty())return fail("left-drag did not evenly split the held stack across the dragged slots");
+  if(leftDrag.isDragging()||leftDrag.dragSlotCount()!=0)return fail("endDrag did not clear drag state");
+
+  Inventory scarceDrag;scarceDrag.setCursorStack(ItemStack::block(BlockType::SAND,2));
+  scarceDrag.beginDrag(false);for(int i=0;i<5;++i)scarceDrag.dragOver(Inventory::Area::HOTBAR,i);scarceDrag.endDrag();
+  int filled=0;for(int i=0;i<5;++i)if(scarceDrag.hotbarSlot(i).count==1)++filled;
+  if(filled!=2||!scarceDrag.cursorStack().empty())return fail("left-drag with fewer items than slots did not give one item to as many slots as it could afford");
+
+  Inventory rightDrag;rightDrag.setCursorStack(ItemStack::block(BlockType::GRAVEL,5));
+  rightDrag.beginDrag(true);
+  rightDrag.dragOver(Inventory::Area::BACKPACK,0);rightDrag.dragOver(Inventory::Area::BACKPACK,1);rightDrag.dragOver(Inventory::Area::BACKPACK,2);
+  if(rightDrag.backpackSlot(0).count!=1||rightDrag.backpackSlot(1).count!=1||rightDrag.backpackSlot(2).count!=1||rightDrag.cursorStack().count!=2)return fail("right-drag did not place one item per slot as it was painted");
+  rightDrag.endDrag();
+  if(rightDrag.cursorStack().count!=2||rightDrag.backpackSlot(0).count!=1)return fail("endDrag altered an already-applied right-drag");
+
+  Inventory abandonedDrag;abandonedDrag.setCursorStack(ItemStack::block(BlockType::GLASS,4));
+  abandonedDrag.beginDrag(false);abandonedDrag.dragOver(Inventory::Area::HOTBAR,0);
+  if(abandonedDrag.dragSlotCount()!=1)return fail("a single-slot drag should record exactly one slot");
+  abandonedDrag.endDrag();
+  if(abandonedDrag.hotbarSlot(0).count!=0||abandonedDrag.cursorStack().count!=4)return fail("a drag that only touched one slot should not distribute");
+
   return 0;
 }
