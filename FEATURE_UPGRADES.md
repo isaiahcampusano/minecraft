@@ -94,3 +94,13 @@ The v2.0 sprint and survival pass adds:
 - The `MCv3` save format for food and survival state, with strict atomic validation and automatic `MCv2` migration.
 
 Death clears the hotbar, backpack, cursor stack, and both crafting inputs without creating dropped item entities. World edits remain intact. Saturation is deliberately hidden, and mobs, combat, armor, drowning, farming, extra foods, difficulty settings, and multiplayer remain outside this release.
+
+## v2.1
+
+The v2.1 camera pass adds:
+
+- A third camera mode, third-person front view, alongside the existing first-person and third-person-back views. `F5` now cycles through all three instead of toggling between two, matching vanilla's front/back/first cycle.
+- A centered, unobstructed-by-default framing for front view (no sideways offset), distinct from third-person-back's over-the-shoulder angle, using the same solid-geometry pull-in behavior so the camera never clips through walls in either third-person mode.
+- A decoupling of gameplay targeting from the on-screen camera: mining, placing, bed use, crafting-table use, and mob attacks now always raycast from the player's actual eye position and look direction, regardless of which camera is being drawn. Previously this ray was taken from the third-person camera itself, which happened to work for back view but would have pointed the wrong way (back toward the player) in front view.
+
+Movement remains tied to the player's own yaw (mouse-controlled), never to the camera, in all three modes — this was already true and did not need to change. No new assets or dependencies were introduced.
