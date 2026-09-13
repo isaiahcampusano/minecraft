@@ -16,7 +16,7 @@ inline constexpr float hotbarWidth(){return Inventory::HOTBAR_SLOTS*SLOT_SIZE+(I
 inline float hotbarX(int width){return(width-hotbarWidth())*.5f;}
 inline float paletteX(int width){return std::max(8.f,hotbarX(width)-PALETTE_WIDTH-16.f);}
 
-enum class Area{NONE,HOTBAR,BACKPACK,CREATIVE,PERSONAL_CRAFT,TABLE_CRAFT,CRAFT_OUTPUT,HELD,FURNACE};
+enum class Area{NONE,HOTBAR,BACKPACK,CREATIVE,PERSONAL_CRAFT,TABLE_CRAFT,CRAFT_OUTPUT,FURNACE};
 struct Hit{Area area=Area::NONE;int index=-1;};
 inline bool contains(float x,float y,float left,float bottom,float width,float height){return x>=left&&x<left+width&&y>=bottom&&y<bottom+height;}
 inline Hit hitTest(float x,float yFromTop,int width,int height,bool tableOpen=false,bool creativeVisible=true,bool furnaceOpen=false){
@@ -27,7 +27,6 @@ inline Hit hitTest(float x,float yFromTop,int width,int height,bool tableOpen=fa
   if(furnaceOpen){const int slot=FurnaceLayout::hitTest(x,y,width);if(slot>=0)return{Area::FURNACE,slot};}
   else {const int craft=CraftingLayout::hitGrid(x,y,width,tableOpen);if(craft>=0)return{tableOpen?Area::TABLE_CRAFT:Area::PERSONAL_CRAFT,craft};
   if(CraftingLayout::hitOutput(x,y,width,tableOpen))return{Area::CRAFT_OUTPUT,0};}
-  {const float heldX=startX+hotbarWidth()+16.f;if(contains(x,y,heldX,BACKPACK_Y,SLOT_SIZE,SLOT_SIZE))return{Area::HELD,0};}
   return{};
 }
 }

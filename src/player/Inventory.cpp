@@ -11,6 +11,31 @@ bool Inventory::addTo(std::array<ItemStack,N>& slots,const ItemStack& item){
   return false;
 }
 
+template<std::size_t N>
+int Inventory::transferTo(std::array<ItemStack,N>& slots,ItemStack& source){
+  if(source.empty())return 0;
+  const int original=source.count;
+  if(source.kind!=ItemKind::TOOL){
+    for(auto& slot:slots){
+      if(source.empty())break;
+      if(!slot.empty()&&sameItemType(slot,source)&&slot.count<MAX_STACK_SIZE){
+        const int amount=std::min(source.count,MAX_STACK_SIZE-slot.count);
+        slot.count+=amount;source.count-=amount;
+      }
+    }
+  }
+  for(auto& slot:slots){
+    if(source.empty())break;
+    if(slot.empty()){
+      slot=source;
+      slot.count=source.kind==ItemKind::TOOL?1:std::min(source.count,MAX_STACK_SIZE);
+      source.count-=slot.count;
+    }
+  }
+  if(source.count<=0)source={};
+  return original-source.count;
+}
+
 bool Inventory::add(BlockType type){
   if(type==BlockType::AIR||type==BlockType::COUNT)return false;
   return add(ItemStack::block(type));
@@ -107,7 +132,21 @@ void Inventory::endDrag(){
       if(amount<=0)continue;
       slot->count+=amount;m_cursorStack.count-=amount;
     }
+
     if(m_cursorStack.count<=0)m_cursorStack={};
   }
   m_dragActive=false;m_dragRight=false;m_dragSlots.clear();
+}
+
+bool Inventory::quickMove(Area area,int i){
+  ItemStack* source=slotAt(area,i);
+  if(!source||source->empty())return false;
+  int moved=0;
+  switch(area){
+    case Area::HOTBAR:moved=transferTo(m_backpack,*source);break;
+    case Area::BACKPACK:moved=transferTo(m_hotbar,*source);break;
+    case Area::PERSONAL_CRAFT:
+    case Area::TABLE_CRAFT:moved=transferTo(m_backpack,*source);if(!source->empty())moved+=transferTo(m_hotbar,*source);break;
+  }
+  return moved>0;
 }

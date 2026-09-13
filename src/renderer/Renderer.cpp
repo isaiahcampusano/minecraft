@@ -123,15 +123,26 @@ void Renderer::drawOverlay(int width,int height,const std::string& text,const Pl
       std::vector<float> tip={arrow.x+arrow.w,arrow.y-4.f,0,arrow.x+arrow.w+12.f,arrow.y+arrow.h*.5f,0,arrow.x+arrow.w,arrow.y+arrow.h+4.f,0};drawQuads(tip,{.5f,.5f,.52f,1});
       appendQuad(fire,flame.x,flame.y,flame.w,flame.h*fuel);drawQuads(fire,{1.f,.38f,.05f,1});
     }else {const int craftSize=tableOpen?3:2;for(int i=0;i<craftSize*craftSize;++i){const int row=i/craftSize,col=i%craftSize;drawSlot(CraftingLayout::gridX(width,tableOpen)+col*(InventoryLayout::SLOT_SIZE+InventoryLayout::GAP),CraftingLayout::BOTTOM+(craftSize-1-row)*(InventoryLayout::SLOT_SIZE+InventoryLayout::GAP),inventory.craftSlot(tableOpen,i),false);}drawSlot(CraftingLayout::outputX(width),CraftingLayout::outputY(tableOpen),inventory.craftingOutput(tableOpen),false);drawText(tableOpen?"TABLE CRAFT":"PERSONAL CRAFT",CraftingLayout::gridX(width,tableOpen),CraftingLayout::BOTTOM+craftSize*(InventoryLayout::SLOT_SIZE+InventoryLayout::GAP)+8.f,1.f,{1,1,1,1});drawText("OUTPUT",CraftingLayout::outputX(width),CraftingLayout::outputY(tableOpen)+62.f,1.f,{1,1,1,1});}
-    const float heldX=startX+InventoryLayout::hotbarWidth()+16.f;drawSlot(heldX,InventoryLayout::BACKPACK_Y,inventory.cursorStack(),false);drawText("HELD",heldX,InventoryLayout::BACKPACK_Y+62.f,1.f,{1,1,1,1});
   }
   for(int i=0;i<(hudVisible||inventoryOpen?Inventory::HOTBAR_SLOTS:0);++i)drawSlot(startX+i*(InventoryLayout::SLOT_SIZE+InventoryLayout::GAP),InventoryLayout::HOTBAR_Y,inventory.hotbarSlot(i),i==inventory.selectedSlot());
-  auto hoveredStack=[&](){const auto hit=InventoryLayout::hitTest(mouseX,mouseY,width,height,tableOpen,player.gameMode()==GameMode::Creative,furnace!=nullptr);if(hit.area==InventoryLayout::Area::HOTBAR){if(!inventoryOpen&&hit.index>6)return ItemStack{};return inventory.hotbarSlot(hit.index);}if(!inventoryOpen)return ItemStack{};if(hit.area==InventoryLayout::Area::FURNACE&&furnace)return hit.index==0?furnace->inputSlot:hit.index==1?furnace->fuelSlot:furnace->outputSlot;if(hit.area==InventoryLayout::Area::BACKPACK)return inventory.backpackSlot(hit.index);if(hit.area==InventoryLayout::Area::PERSONAL_CRAFT)return inventory.craftSlot(false,hit.index);if(hit.area==InventoryLayout::Area::TABLE_CRAFT)return inventory.craftSlot(true,hit.index);if(hit.area==InventoryLayout::Area::CRAFT_OUTPUT)return inventory.craftingOutput(tableOpen);if(hit.area==InventoryLayout::Area::HELD)return inventory.cursorStack();if(hit.area==InventoryLayout::Area::CREATIVE){const int itemIndex=creativePage*InventoryLayout::CREATIVE_PAGE_SIZE+hit.index;if(itemIndex>=0&&itemIndex<static_cast<int>(creativeCatalog().size()))return creativeCatalog()[static_cast<std::size_t>(itemIndex)];}return ItemStack{};};
-  const ItemStack hovered=hoveredStack();
+  auto hoveredStack=[&](){const auto hit=InventoryLayout::hitTest(mouseX,mouseY,width,height,tableOpen,player.gameMode()==GameMode::Creative,furnace!=nullptr);if(hit.area==InventoryLayout::Area::HOTBAR){if(!inventoryOpen&&hit.index>6)return ItemStack{};return inventory.hotbarSlot(hit.index);}if(!inventoryOpen)return ItemStack{};if(hit.area==InventoryLayout::Area::FURNACE&&furnace)return hit.index==0?furnace->inputSlot:hit.index==1?furnace->fuelSlot:furnace->outputSlot;if(hit.area==InventoryLayout::Area::BACKPACK)return inventory.backpackSlot(hit.index);if(hit.area==InventoryLayout::Area::PERSONAL_CRAFT)return inventory.craftSlot(false,hit.index);if(hit.area==InventoryLayout::Area::TABLE_CRAFT)return inventory.craftSlot(true,hit.index);if(hit.area==InventoryLayout::Area::CRAFT_OUTPUT)return inventory.craftingOutput(tableOpen);if(hit.area==InventoryLayout::Area::CREATIVE){const int itemIndex=creativePage*InventoryLayout::CREATIVE_PAGE_SIZE+hit.index;if(itemIndex>=0&&itemIndex<static_cast<int>(creativeCatalog().size()))return creativeCatalog()[static_cast<std::size_t>(itemIndex)];}return ItemStack{};};
+  const ItemStack hovered=inventory.cursorStack().empty()?hoveredStack():ItemStack{};
   if(!hovered.empty()){
     const std::string label=itemName(hovered);const float pixel=2.f,boxW=static_cast<float>(label.size())*6.f*pixel+12.f,boxH=26.f;
     float x=std::clamp(mouseX+14.f,4.f,std::max(4.f,static_cast<float>(width)-boxW-4.f));float y=std::clamp(static_cast<float>(height)-mouseY-24.f,4.f,std::max(4.f,static_cast<float>(height)-boxH-4.f));
     std::vector<float> tooltip;appendQuad(tooltip,x,y,boxW,boxH);drawQuads(tooltip,{.04f,.04f,.05f,.92f});drawText(label,x+6.f,y+19.f,pixel,{1,1,1,1});
+  }
+  if(inventoryOpen&&!inventory.cursorStack().empty()){
+    const float cursorSize=InventoryLayout::SLOT_SIZE*.75f;
+    const float cursorX=mouseX-cursorSize*.5f;
+    const float cursorY=static_cast<float>(height)-mouseY-cursorSize*.5f;
+    std::vector<float> cursor;
+    appendQuad(cursor,cursorX+4.f,cursorY+4.f,cursorSize-8.f,cursorSize-8.f);
+    drawQuads(cursor,itemTint(inventory.cursorStack()));
+    if(inventory.cursorStack().kind!=ItemKind::TOOL){
+      const std::string count=std::to_string(inventory.cursorStack().count);
+      drawText(count,cursorX+cursorSize-4.f-static_cast<float>(count.size())*6.f,cursorY+cursorSize-8.f,1.f,{1,1,1,1});
+    }
   }
   if(menuState!=0&&!inventoryOpen){
     std::vector<float> shade;appendQuad(shade,0,0,static_cast<float>(width),static_cast<float>(height));drawQuads(shade,{.02f,.02f,.03f,.68f});

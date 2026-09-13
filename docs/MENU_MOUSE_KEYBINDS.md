@@ -119,6 +119,11 @@ Teleport loads destination chunks for collision/headroom checks and rejects unsa
 
 Chat suppresses camera motion and gameplay bindings while the world continues running. Ordinary inventories and furnace screens also allow simulation and cooking. Pause/settings freeze simulation. Setting time and sleeping never fast-forward furnace timers. There is no offline catch-up.
 
+While an inventory is open, physical Left or Right Shift takes precedence over
+gameplay bindings for quick-move. It routes hotbar and backpack items to the
+opposite player section, and routes crafting ingredients to backpack then
+hotbar capacity. Rebinding gameplay actions does not change this behavior.
+
 ## Compatibility and implementation
 
 World saves advance from MCv7 to **MCv8**, appending the uint32 seed, player position, yaw/pitch, and day/night time after the existing furnace payload. MCv2–MCv7 readers remain supported and default to seed 0, starting pose, and morning. Existing block, food, and item IDs are unchanged. Malformed records fail before applying the save.

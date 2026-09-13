@@ -47,7 +47,7 @@ private:
   void setMenu(MenuState menu);
   void handleMenuClick(double x,double y,int width,int height);
   void input(float dt);
-  void inventoryMouse(float mouseX,float mouseY,int width,int height,int action);
+  void inventoryMouse(float mouseX,float mouseY,int width,int height,int action,int mods=0);
   void updateSimulation(float dt);
   void updateMining(float dt,const glm::vec3& origin,const glm::vec3& direction,const RayHit& blockHit);
   void updateEating(float dt);

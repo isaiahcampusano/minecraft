@@ -89,5 +89,10 @@ int main() {
   abandonedDrag.endDrag();
   if(abandonedDrag.hotbarSlot(0).count!=0||abandonedDrag.cursorStack().count!=4)return fail("a drag that only touched one slot should not distribute");
 
+  Inventory quickMove;
+  quickMove.setHotbarSlot(0,ItemStack::block(BlockType::STONE,64));
+  if(!quickMove.quickMove(Inventory::Area::HOTBAR,0)||!quickMove.hotbarSlot(0).empty()||quickMove.backpackSlot(0).count!=64)return fail("quick move did not route hotbar items to backpack");
+  if(!quickMove.quickMove(Inventory::Area::BACKPACK,0)||quickMove.hotbarSlot(0).count!=64||!quickMove.backpackSlot(0).empty())return fail("quick move did not route backpack items back to hotbar");
+
   return 0;
 }

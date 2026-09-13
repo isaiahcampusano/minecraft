@@ -38,7 +38,7 @@ void Application::useAction(){auto*a=this;
   if(a->m_clickCooldown>0)return;
   glm::vec3 origin=a->m_player.eyePosition(),direction=a->m_player.forward();auto hit=Raycaster::cast(a->m_world,origin,direction,6.f);if(!hit.hit){const ItemStack selected=a->m_inventory.selectedStack();if(selected.kind==ItemKind::FOOD&&!selected.empty()&&a->m_player.gameMode()==GameMode::Survival&&a->m_player.survival.canEat()){a->m_eating.start(a->m_inventory.selectedSlot(),selected.foodType);a->m_sprint.cancel();a->m_useSwingTimer=.2f;}return;}const BlockType targeted=a->m_world.getBlock(hit.block.x,hit.block.y,hit.block.z);if(targeted==BlockType::FURNACE){a->setInventoryOpen(true);a->m_furnaceOpen=true;a->m_furnacePosition=hit.block;return;}if(targeted==BlockType::BED){a->m_useSwingTimer=.2f;if(a->m_dayNight.isNight()){const glm::vec3 bedSpawn=safeRespawnPosition(a->m_world,{hit.block.x+.5f,hit.block.y+1.f,hit.block.z+.5f});a->m_player.setSpawnPosition(bedSpawn);a->m_dayNight.skipToMorning();a->m_eating.cancel();a->m_sprint.cancel();}return;}if(targeted==BlockType::CRAFTING_TABLE){a->m_useSwingTimer=.2f;a->setInventoryOpen(true,true);return;}  const ItemStack selected=a->m_inventory.selectedStack();if(selected.kind==ItemKind::FOOD&&!selected.empty()){if(a->m_player.gameMode()==GameMode::Survival&&a->m_player.gameMode()==GameMode::Survival&&a->m_player.survival.canEat()){a->m_eating.start(a->m_inventory.selectedSlot(),selected.foodType);a->m_sprint.cancel();a->m_useSwingTimer=.2f;}return;}if(a->m_player.overlapsBlock(hit.adjacent))return;BlockType type=a->m_inventory.selectedType();if(type!=BlockType::AIR&&(a->m_player.gameMode()==GameMode::Creative||a->m_inventory.consumeSelected())){a->m_useSwingTimer=.2f;a->m_world.setBlock(hit.adjacent.x,hit.adjacent.y,hit.adjacent.z,type);}a->m_clickCooldown=.12f;
 }
-void Application::inventoryMouse(float mouseX,float mouseY,int width,int height,int action){
+void Application::inventoryMouse(float mouseX,float mouseY,int width,int height,int action,int mods){
   auto* a=this;
     const auto hit=InventoryLayout::hitTest(mouseX,mouseY,width,height,a->m_tableOpen,a->m_player.gameMode()==GameMode::Creative,a->m_furnaceOpen);
     if(a->m_furnaceOpen){
@@ -73,6 +73,14 @@ void Application::inventoryMouse(float mouseX,float mouseY,int width,int height,
       return;
     }
     if(action!=GLFW_PRESS)return;
+    const bool physicalShift=glfwGetKey(a->m_window,GLFW_KEY_LEFT_SHIFT)==GLFW_PRESS||glfwGetKey(a->m_window,GLFW_KEY_RIGHT_SHIFT)==GLFW_PRESS||(mods&GLFW_MOD_SHIFT)!=0;
+    if(physicalShift&&(hit.area==InventoryLayout::Area::HOTBAR||hit.area==InventoryLayout::Area::BACKPACK||hit.area==InventoryLayout::Area::PERSONAL_CRAFT||hit.area==InventoryLayout::Area::TABLE_CRAFT)){
+      a->m_inventory.quickMove(
+        hit.area==InventoryLayout::Area::HOTBAR?Inventory::Area::HOTBAR:
+        hit.area==InventoryLayout::Area::BACKPACK?Inventory::Area::BACKPACK:
+        hit.area==InventoryLayout::Area::PERSONAL_CRAFT?Inventory::Area::PERSONAL_CRAFT:Inventory::Area::TABLE_CRAFT,hit.index);
+      return;
+    }
     if(hit.area==InventoryLayout::Area::HOTBAR){a->m_inventory.swapHotbar(hit.index);a->m_inventoryDragging=true;}
     else if(hit.area==InventoryLayout::Area::BACKPACK){a->m_inventory.swapBackpack(hit.index);a->m_inventoryDragging=true;}
     else if(hit.area==InventoryLayout::Area::PERSONAL_CRAFT){a->m_inventory.swapCraft(false,hit.index);a->m_inventoryDragging=true;}
