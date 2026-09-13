@@ -96,6 +96,10 @@ void Renderer::drawOverlay(int width,int height,const std::string& text,const Pl
     float x=std::clamp(mouseX+14.f,4.f,std::max(4.f,static_cast<float>(width)-boxW-4.f));float y=std::clamp(static_cast<float>(height)-mouseY-24.f,4.f,std::max(4.f,static_cast<float>(height)-boxH-4.f));
     std::vector<float> tooltip;appendQuad(tooltip,x,y,boxW,boxH);drawQuads(tooltip,{.04f,.04f,.05f,.92f});drawText(label,x+6.f,y+19.f,pixel,{1,1,1,1});
   }
+  if(inventoryOpen&&!inventory.cursorStack().empty()){
+    const float half=InventoryLayout::SLOT_SIZE*.5f;
+    drawSlot(mouseX-half,static_cast<float>(height)-mouseY-half,inventory.cursorStack(),false);
+  }
   if(menuState!=0&&!inventoryOpen){
     std::vector<float> shade;appendQuad(shade,0,0,static_cast<float>(width),static_cast<float>(height));drawQuads(shade,{.02f,.02f,.03f,.68f});
     const float panelW=360.f,panelH=menuState==2?360.f:260.f,left=(width-panelW)*.5f,bottom=(height-panelH)*.5f;

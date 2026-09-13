@@ -13,6 +13,18 @@
 #include <sstream>
 #include <stdexcept>
 
+namespace {
+bool toInventoryArea(InventoryLayout::Area layoutArea,Inventory::Area& out){
+  switch(layoutArea){
+    case InventoryLayout::Area::HOTBAR:out=Inventory::Area::HOTBAR;return true;
+    case InventoryLayout::Area::BACKPACK:out=Inventory::Area::BACKPACK;return true;
+    case InventoryLayout::Area::PERSONAL_CRAFT:out=Inventory::Area::PERSONAL_CRAFT;return true;
+    case InventoryLayout::Area::TABLE_CRAFT:out=Inventory::Area::TABLE_CRAFT;return true;
+    default:return false;
+  }
+}
+}
+
 Application::Application(){
   if(!glfwInit())throw std::runtime_error("Could not initialize GLFW");
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,3);glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);glfwWindowHint(GLFW_OPENGL_PROFILE,GLFW_OPENGL_CORE_PROFILE);
@@ -46,7 +58,18 @@ void Application::handleMenuClick(double x,double y,int width,int height){
     else if(fromBottom<=panelH-190.f)setMenu(MenuState::Settings);
   }
 }
-void Application::cursor(GLFWwindow*w,double x,double y){auto*a=static_cast<Application*>(glfwGetWindowUserPointer(w));if(!a->m_captured)return;if(a->m_firstMouse){a->m_lastX=x;a->m_lastY=y;a->m_firstMouse=false;}a->m_player.look(static_cast<float>(x-a->m_lastX),static_cast<float>(a->m_lastY-y));a->m_lastX=x;a->m_lastY=y;}
+void Application::cursor(GLFWwindow*w,double x,double y){auto*a=static_cast<Application*>(glfwGetWindowUserPointer(w));
+  if(a->m_inventoryOpen){
+    if(!a->m_inventoryDragging)return;
+    int windowWidth,windowHeight,frameWidth,frameHeight;glfwGetWindowSize(w,&windowWidth,&windowHeight);glfwGetFramebufferSize(w,&frameWidth,&frameHeight);
+    if(windowWidth<=0||windowHeight<=0)return;
+    const auto hit=InventoryLayout::hitTest(static_cast<float>(x*frameWidth/windowWidth),static_cast<float>(y*frameHeight/windowHeight),frameWidth,frameHeight,a->m_tableOpen,a->m_player.gameMode()==GameMode::Creative);
+    Inventory::Area area;if(toInventoryArea(hit.area,area))a->m_inventory.dragOver(area,hit.index);
+    return;
+  }
+  if(!a->m_captured)return;
+  if(a->m_firstMouse){a->m_lastX=x;a->m_lastY=y;a->m_firstMouse=false;}
+  a->m_player.look(static_cast<float>(x-a->m_lastX),static_cast<float>(a->m_lastY-y));a->m_lastX=x;a->m_lastY=y;}
 void Application::scroll(GLFWwindow*w,double,double y){auto*a=static_cast<Application*>(glfwGetWindowUserPointer(w));if(a->m_inventoryOpen){if(a->m_player.gameMode()!=GameMode::Creative)return;const int pages=static_cast<int>((creativeCatalog().size()+InventoryLayout::CREATIVE_PAGE_SIZE-1)/InventoryLayout::CREATIVE_PAGE_SIZE);a->m_creativePage=std::clamp(a->m_creativePage+(y<0?1:-1),0,std::max(0,pages-1));return;}a->m_camera.adjustFov(-static_cast<float>(y)*2.f);}
 void Application::key(GLFWwindow*w,int k,int,int action,int){auto*a=static_cast<Application*>(glfwGetWindowUserPointer(w));if(action!=GLFW_PRESS)return;
   if(a->m_keybindCapture>=0){if(k==GLFW_KEY_ESCAPE){a->m_keybindCapture=-1;return;}bool duplicate=false;for(std::size_t i=0;i<a->m_settings.keybindings.size();++i)if(static_cast<int>(i)!=a->m_keybindCapture&&a->m_settings.keybindings[i]==k)duplicate=true;if(!duplicate){a->m_settings.keybindings[static_cast<std::size_t>(a->m_keybindCapture)]=k;SettingsState::save(a->m_settings);a->m_keybindCapture=-1;}return;}
@@ -58,25 +81,34 @@ void Application::mouseButton(GLFWwindow*w,int button,int action,int){
   auto*a=static_cast<Application*>(glfwGetWindowUserPointer(w));
   if(a->m_menu!=MenuState::Gameplay&&!a->m_inventoryOpen){if(action==GLFW_RELEASE)a->m_menuMouseReleaseRequired=false;if(action==GLFW_PRESS&&button==GLFW_MOUSE_BUTTON_LEFT){double x,y;int ww,hh;glfwGetCursorPos(w,&x,&y);glfwGetFramebufferSize(w,&ww,&hh);a->handleMenuClick(x,y,ww,hh);}return;}
   if(a->m_inventoryOpen){
-    if(button!=GLFW_MOUSE_BUTTON_LEFT)return;
+    if(button!=GLFW_MOUSE_BUTTON_LEFT&&button!=GLFW_MOUSE_BUTTON_RIGHT)return;
     double cursorX,cursorY;int windowWidth,windowHeight,frameWidth,frameHeight;
     glfwGetCursorPos(w,&cursorX,&cursorY);glfwGetWindowSize(w,&windowWidth,&windowHeight);glfwGetFramebufferSize(w,&frameWidth,&frameHeight);
     if(windowWidth<=0||windowHeight<=0)return;
     const auto hit=InventoryLayout::hitTest(static_cast<float>(cursorX*frameWidth/windowWidth),static_cast<float>(cursorY*frameHeight/windowHeight),frameWidth,frameHeight,a->m_tableOpen,a->m_player.gameMode()==GameMode::Creative);
+    Inventory::Area area;const bool draggable=toInventoryArea(hit.area,area);
     if(action==GLFW_RELEASE){
       if(!a->m_inventoryDragging)return;
       a->m_inventoryDragging=false;
-      if(hit.area==InventoryLayout::Area::HOTBAR)a->m_inventory.swapHotbar(hit.index);
-      else if(hit.area==InventoryLayout::Area::BACKPACK)a->m_inventory.swapBackpack(hit.index);
-      else if(hit.area==InventoryLayout::Area::PERSONAL_CRAFT)a->m_inventory.swapCraft(false,hit.index);
-      else if(hit.area==InventoryLayout::Area::TABLE_CRAFT)a->m_inventory.swapCraft(true,hit.index);
+      if(draggable)a->m_inventory.dragOver(area,hit.index);
+      if(a->m_inventory.dragSlotCount()<2&&button==GLFW_MOUSE_BUTTON_LEFT){
+        if(hit.area==InventoryLayout::Area::HOTBAR)a->m_inventory.swapHotbar(hit.index);
+        else if(hit.area==InventoryLayout::Area::BACKPACK)a->m_inventory.swapBackpack(hit.index);
+        else if(hit.area==InventoryLayout::Area::PERSONAL_CRAFT)a->m_inventory.swapCraft(false,hit.index);
+        else if(hit.area==InventoryLayout::Area::TABLE_CRAFT)a->m_inventory.swapCraft(true,hit.index);
+      }
+      a->m_inventory.endDrag();
       return;
     }
     if(action!=GLFW_PRESS)return;
-    if(hit.area==InventoryLayout::Area::HOTBAR){a->m_inventory.swapHotbar(hit.index);a->m_inventoryDragging=true;}
-    else if(hit.area==InventoryLayout::Area::BACKPACK){a->m_inventory.swapBackpack(hit.index);a->m_inventoryDragging=true;}
-    else if(hit.area==InventoryLayout::Area::PERSONAL_CRAFT){a->m_inventory.swapCraft(false,hit.index);a->m_inventoryDragging=true;}
-    else if(hit.area==InventoryLayout::Area::TABLE_CRAFT){a->m_inventory.swapCraft(true,hit.index);a->m_inventoryDragging=true;}
+    if(button==GLFW_MOUSE_BUTTON_RIGHT){
+      if(draggable){a->m_inventory.rightClick(area,hit.index);a->m_inventory.beginDrag(true);a->m_inventory.dragOver(area,hit.index);a->m_inventoryDragging=true;}
+      return;
+    }
+    if(hit.area==InventoryLayout::Area::HOTBAR){a->m_inventory.swapHotbar(hit.index);a->m_inventory.beginDrag(false);a->m_inventory.dragOver(area,hit.index);a->m_inventoryDragging=true;}
+    else if(hit.area==InventoryLayout::Area::BACKPACK){a->m_inventory.swapBackpack(hit.index);a->m_inventory.beginDrag(false);a->m_inventory.dragOver(area,hit.index);a->m_inventoryDragging=true;}
+    else if(hit.area==InventoryLayout::Area::PERSONAL_CRAFT){a->m_inventory.swapCraft(false,hit.index);a->m_inventory.beginDrag(false);a->m_inventory.dragOver(area,hit.index);a->m_inventoryDragging=true;}
+    else if(hit.area==InventoryLayout::Area::TABLE_CRAFT){a->m_inventory.swapCraft(true,hit.index);a->m_inventory.beginDrag(false);a->m_inventory.dragOver(area,hit.index);a->m_inventoryDragging=true;}
     else if(hit.area==InventoryLayout::Area::CRAFT_OUTPUT){a->m_inventory.craftOutput(a->m_tableOpen);a->m_inventoryDragging=true;}
     else if(hit.area==InventoryLayout::Area::CREATIVE&&a->m_player.gameMode()==GameMode::Creative){const int itemIndex=a->m_creativePage*InventoryLayout::CREATIVE_PAGE_SIZE+hit.index;if(itemIndex<static_cast<int>(creativeCatalog().size())){a->m_inventory.giveCreative(creativeCatalog()[static_cast<std::size_t>(itemIndex)]);a->m_inventoryDragging=true;}}
     return;

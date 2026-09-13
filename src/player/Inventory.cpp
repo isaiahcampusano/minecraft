@@ -53,4 +53,61 @@ ItemStack Inventory::normalized(const ItemStack& stack){
 void Inventory::setCursorStack(const ItemStack& stack){m_cursorStack=normalized(stack);}
 void Inventory::setHotbarSlot(int i,const ItemStack& stack){if(i>=0&&i<HOTBAR_SLOTS)m_hotbar[i]=normalized(stack);}
 void Inventory::setBackpackSlot(int i,const ItemStack& stack){if(i>=0&&i<BACKPACK_SLOTS)m_backpack[i]=normalized(stack);}
-void Inventory::clear(){m_hotbar.fill({});m_backpack.fill({});m_personalCraft.fill({});m_tableCraft.fill({});m_cursorStack={};m_selected=0;}
+void Inventory::clear(){m_hotbar.fill({});m_backpack.fill({});m_personalCraft.fill({});m_tableCraft.fill({});m_cursorStack={};m_selected=0;m_dragActive=false;m_dragRight=false;m_dragSlots.clear();}
+
+ItemStack* Inventory::slotAt(Area area,int i){
+  switch(area){
+    case Area::HOTBAR:return(i>=0&&i<HOTBAR_SLOTS)?&m_hotbar[static_cast<std::size_t>(i)]:nullptr;
+    case Area::BACKPACK:return(i>=0&&i<BACKPACK_SLOTS)?&m_backpack[static_cast<std::size_t>(i)]:nullptr;
+    case Area::PERSONAL_CRAFT:return(i>=0&&i<4)?&m_personalCraft[static_cast<std::size_t>(i)]:nullptr;
+    case Area::TABLE_CRAFT:return(i>=0&&i<9)?&m_tableCraft[static_cast<std::size_t>(i)]:nullptr;
+  }
+  return nullptr;
+}
+
+bool Inventory::isValidDragTarget(const ItemStack& slot)const{
+  if(slot.empty())return true;
+  return slot.kind!=ItemKind::TOOL&&sameItemType(slot,m_cursorStack)&&slot.count<MAX_STACK_SIZE;
+}
+void Inventory::rightClick(Area area,int i){
+  ItemStack* slot=slotAt(area,i);if(!slot)return;
+  if(m_cursorStack.empty()){
+    if(slot->empty())return;
+    if(slot->kind==ItemKind::TOOL){std::swap(*slot,m_cursorStack);return;}
+    const int half=(slot->count+1)/2;
+    m_cursorStack=*slot;m_cursorStack.count=half;
+    if((slot->count-=half)<=0)*slot={};
+    return;
+  }
+  if(m_cursorStack.kind==ItemKind::TOOL){std::swap(*slot,m_cursorStack);return;}
+  if(!isValidDragTarget(*slot))return;
+  if(slot->empty()){*slot=m_cursorStack;slot->count=0;}
+  ++slot->count;if(--m_cursorStack.count<=0)m_cursorStack={};
+}
+void Inventory::beginDrag(bool rightButton){m_dragActive=true;m_dragRight=rightButton;m_dragSlots.clear();}
+void Inventory::dragOver(Area area,int i){
+  if(!m_dragActive||m_cursorStack.empty())return;
+  for(const auto& visited:m_dragSlots)if(visited.first==area&&visited.second==i)return;
+  ItemStack* slot=slotAt(area,i);if(!slot||!isValidDragTarget(*slot))return;
+  if(m_dragRight){
+    if(slot->empty()){*slot=m_cursorStack;slot->count=0;}
+    ++slot->count;if(--m_cursorStack.count<=0)m_cursorStack={};
+  }
+  m_dragSlots.emplace_back(area,i);
+}
+void Inventory::endDrag(){
+  if(m_dragActive&&!m_dragRight&&m_dragSlots.size()>=2&&!m_cursorStack.empty()){
+    const int n=static_cast<int>(m_dragSlots.size());
+    const int perSlot=std::max(1,m_cursorStack.count/n);
+    for(const auto& visited:m_dragSlots){
+      if(m_cursorStack.count<=0)break;
+      ItemStack* slot=slotAt(visited.first,visited.second);if(!slot)continue;
+      if(slot->empty()){*slot=m_cursorStack;slot->count=0;}
+      const int amount=std::min({perSlot,MAX_STACK_SIZE-slot->count,m_cursorStack.count});
+      if(amount<=0)continue;
+      slot->count+=amount;m_cursorStack.count-=amount;
+    }
+    if(m_cursorStack.count<=0)m_cursorStack={};
+  }
+  m_dragActive=false;m_dragRight=false;m_dragSlots.clear();
+}
