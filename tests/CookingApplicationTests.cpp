@@ -15,7 +15,7 @@ struct CookingApplicationTests {
   }
   static void exercise(){
     {
-      Application a(false);a.m_world.setTaskBudgets(0,0,0);a.m_player.position={500,7,500};a.m_player.yaw=-90;a.m_player.pitch=-15;
+      Application a(false);WorldInfo info;std::string error;REQUIRE(a.m_repository.create("Cooking",0,GameMode::Survival,info,error));REQUIRE(a.enterWorld(info));a.m_world.setTaskBudgets(0,0,0);a.m_player.position={500,7,500};a.m_player.yaw=-90;a.m_player.pitch=-15;
       a.m_player.setGameMode(GameMode::Creative);a.m_player.toggleFly();
       REQUIRE(a.m_world.setBlock(500,7,497,BlockType::FURNACE));
       Application::mouseButton(a.m_window,GLFW_MOUSE_BUTTON_RIGHT,GLFW_PRESS,0);
@@ -35,13 +35,13 @@ struct CookingApplicationTests {
       a.setMenu(Application::MenuState::Settings);a.updateSimulation(20.f);REQUIRE(a.m_world.furnaceAt({500,7,497})->cookProgress==3.);
       a.setMenu(Application::MenuState::Gameplay);a.updateSimulation(7.f);
       REQUIRE(a.m_world.furnaceAt({500,7,497})->outputSlot.count==1);
-      a.m_menuMouseReleaseRequired=false;Application::mouseButton(a.m_window,GLFW_MOUSE_BUTTON_RIGHT,GLFW_PRESS,0);
+      a.m_menuMouseReleaseRequired=false;Application::mouseButton(a.m_window,GLFW_MOUSE_BUTTON_RIGHT,GLFW_RELEASE,0);Application::mouseButton(a.m_window,GLFW_MOUSE_BUTTON_RIGHT,GLFW_PRESS,0);
       REQUIRE(a.m_furnaceOpen);click(a,2);REQUIRE(a.m_inventory.cursorStack().foodType==FoodType::COOKED_BEEF&&a.m_inventory.cursorStack().count==1);
       Application::key(a.m_window,GLFW_KEY_ESCAPE,0,GLFW_PRESS,0);REQUIRE(a.m_inventory.cursorStack().count==1);
       a.saveGameState();
     }
     {
-      Application a(false);a.m_world.setTaskBudgets(0,0,0);a.m_world.loadChunk(31,31);
+      Application a(false);a.loadGameState();a.m_world.setTaskBudgets(0,0,0);a.m_world.loadChunk(31,31);
       const auto* f=a.m_world.furnaceAt({500,7,497});REQUIRE(f&&f->fuelRemaining==5.&&f->inputSlot.count==3&&f->outputSlot.empty());
       REQUIRE(a.m_inventory.cursorStack().foodType==FoodType::COOKED_BEEF&&a.m_settings.key(KeyAction::Inventory)==GLFW_KEY_I);
       a.m_player.setGameMode(GameMode::Survival);a.m_player.survival.restore(20,5,0,0);a.m_world.tickFurnaces(10.);

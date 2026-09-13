@@ -10,7 +10,7 @@ ItemStack itemStack(const SaveData::SlotData& slot){ItemStack stack;stack.kind=s
 }
 
 SaveData GameState::capture(const Inventory& inventory,const World& world,const Player& player,const PassiveMobSystem& mobs){
-  SaveData data;data.selectedSlot=inventory.selectedSlot();data.mode=player.gameMode();data.cursorStack=saveSlot(inventory.cursorStack());
+  SaveData data;data.seed=world.seed();data.playerX=player.position.x;data.playerY=player.position.y;data.playerZ=player.position.z;data.yaw=player.yaw;data.pitch=player.pitch;data.selectedSlot=inventory.selectedSlot();data.mode=player.gameMode();data.cursorStack=saveSlot(inventory.cursorStack());
   for(int i=0;i<Inventory::HOTBAR_SLOTS;++i)data.hotbar[static_cast<std::size_t>(i)]=saveSlot(inventory.hotbarSlot(i));
   for(int i=0;i<Inventory::BACKPACK_SLOTS;++i)data.backpack[static_cast<std::size_t>(i)]=saveSlot(inventory.backpackSlot(i));
   data.health=player.survival.health();data.hunger=player.survival.hunger();data.saturation=player.survival.saturation();data.exhaustion=player.survival.exhaustion();
@@ -22,6 +22,8 @@ SaveData GameState::capture(const Inventory& inventory,const World& world,const 
 }
 
 void GameState::apply(const SaveData& data,Inventory& inventory,World& world,Player& player,PassiveMobSystem& mobs){
+  world.reset(data.seed);
+  player.position={data.playerX,data.playerY,data.playerZ};player.yaw=data.yaw;player.pitch=std::clamp(data.pitch,-89.f,89.f);
   inventory.select(data.selectedSlot);player.setGameMode(data.mode);inventory.setCursorStack(itemStack(data.cursorStack));
   for(int i=0;i<Inventory::HOTBAR_SLOTS;++i)inventory.setHotbarSlot(i,itemStack(data.hotbar[static_cast<std::size_t>(i)]));
   for(int i=0;i<Inventory::BACKPACK_SLOTS;++i)inventory.setBackpackSlot(i,itemStack(data.backpack[static_cast<std::size_t>(i)]));

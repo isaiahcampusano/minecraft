@@ -5,13 +5,14 @@
 namespace {
 constexpr int WORLD_SIZE=1000;
 constexpr int SURFACE_Y=6;
-std::uint32_t positionHash(int x,int z){
+std::uint32_t positionHash(int x,int z,std::uint32_t worldSeed){
   std::uint32_t h=static_cast<std::uint32_t>(x)*374761393u+static_cast<std::uint32_t>(z)*668265263u+0x9e3779b9u;
+  h^=worldSeed*0x85ebca6bu;
   h=(h^(h>>13))*1274126177u;
   return h^(h>>16);
 }
-BlockType surfaceAt(int worldX,int worldZ){
-  const std::uint32_t patch=positionHash(worldX/8,worldZ/8)%11u;
+BlockType surfaceAt(int worldX,int worldZ,std::uint32_t worldSeed){
+  const std::uint32_t patch=positionHash(worldX/8,worldZ/8,worldSeed)%11u;
   return patch==0?BlockType::SAND:(patch==1?BlockType::GRAVEL:BlockType::GRASS);
 }
 void setWorldBlock(Chunk& chunk,int worldX,int y,int worldZ,BlockType type){
@@ -31,14 +32,14 @@ void WorldGenerator::generateTree(Chunk& chunk,int worldX,int worldZ,int surface
   for(int y=trunkBase;y<=topY;++y)setWorldBlock(chunk,worldX,y,worldZ,BlockType::OAK_LOG);
 }
 
-void WorldGenerator::generateFlatWorld(Chunk& c){
+void WorldGenerator::generateFlatWorld(Chunk& c,std::uint32_t worldSeed){
   const int originX=c.position().x*Chunk::SIZE_X,originZ=c.position().y*Chunk::SIZE_Z;
   for(int x=0;x<Chunk::SIZE_X;++x)for(int z=0;z<Chunk::SIZE_Z;++z){int wx=originX+x,wz=originZ+z;if(wx<0||wx>=WORLD_SIZE||wz<0||wz>=WORLD_SIZE)continue;
     c.setBlock(x,0,z,BlockType::BEDROCK);for(int y=1;y<=2;++y)c.setBlock(x,y,z,BlockType::STONE);for(int y=3;y<=5;++y)c.setBlock(x,y,z,BlockType::DIRT);
-    c.setBlock(x,SURFACE_Y,z,surfaceAt(wx,wz));}
+    c.setBlock(x,SURFACE_Y,z,surfaceAt(wx,wz,worldSeed));}
   for(int wz=originZ-2;wz<originZ+Chunk::SIZE_Z+2;++wz)for(int wx=originX-2;wx<originX+Chunk::SIZE_X+2;++wx){
-    if(wx<0||wx>=WORLD_SIZE||wz<0||wz>=WORLD_SIZE||surfaceAt(wx,wz)!=BlockType::GRASS)continue;
-    const std::uint32_t seed=positionHash(wx,wz);if(seed%257u==0u)generateTree(c,wx,wz,SURFACE_Y,seed);
+    if(wx<0||wx>=WORLD_SIZE||wz<0||wz>=WORLD_SIZE||surfaceAt(wx,wz,worldSeed)!=BlockType::GRASS)continue;
+    const std::uint32_t seed=positionHash(wx,wz,worldSeed);if(seed%257u==0u)generateTree(c,wx,wz,SURFACE_Y,seed);
   }
 }
 

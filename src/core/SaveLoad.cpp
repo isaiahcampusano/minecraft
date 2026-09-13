@@ -1,4 +1,5 @@
 #include "SaveLoad.h"
+#include "AtomicFile.h"
 #include "../player/Inventory.h"
 #include "../player/ToolRegistry.h"
 #include <algorithm>
@@ -14,7 +15,7 @@
 #include "../world/FurnaceState.h"
 
 namespace {
-constexpr std::array<char,4> MAGIC_V2={'M','C','v','2'},MAGIC_V3={'M','C','v','3'},MAGIC_V4={'M','C','v','4'},MAGIC_V5={'M','C','v','5'},MAGIC_V6={'M','C','v','6'},MAGIC_V7={'M','C','v','7'};
+constexpr std::array<char,4> MAGIC_V2={'M','C','v','2'},MAGIC_V3={'M','C','v','3'},MAGIC_V4={'M','C','v','4'},MAGIC_V5={'M','C','v','5'},MAGIC_V6={'M','C','v','6'},MAGIC_V7={'M','C','v','7'},MAGIC_V8={'M','C','v','8'};
 constexpr std::uint32_t MAX_EDIT_COUNT=10000000,MAX_MOB_COUNT=32;
 constexpr int WORLD_SIZE=1000,WORLD_HEIGHT=256;
 
@@ -89,12 +90,12 @@ std::filesystem::path SaveLoad::getSavePath(){
 
 bool SaveLoad::save(const SaveData& data){return save(data,getSavePath());}
 bool SaveLoad::save(const SaveData& data,const std::filesystem::path& path){
-  if(!validFurnaces(data)||!validMode(data.mode)||data.selectedSlot<0||data.selectedSlot>=Inventory::HOTBAR_SLOTS||!validSlot(data.cursorStack)||!validSurvival(data)||!validSpawn(data)||data.edits.size()>std::numeric_limits<std::uint32_t>::max()||!validMobs(data.mobs))return false;
+  if(!std::isfinite(data.playerX)||!std::isfinite(data.playerY)||!std::isfinite(data.playerZ)||!std::isfinite(data.yaw)||!std::isfinite(data.pitch)||!std::isfinite(data.timeOfDay)||data.timeOfDay<0||data.timeOfDay>=1||!validFurnaces(data)||!validMode(data.mode)||data.selectedSlot<0||data.selectedSlot>=Inventory::HOTBAR_SLOTS||!validSlot(data.cursorStack)||!validSurvival(data)||!validSpawn(data)||data.edits.size()>std::numeric_limits<std::uint32_t>::max()||!validMobs(data.mobs))return false;
   const auto validCurrentSlot=[](const SaveData::SlotData& slot){return validSlot(slot);};
   if(!std::all_of(data.hotbar.begin(),data.hotbar.end(),validCurrentSlot)||!std::all_of(data.backpack.begin(),data.backpack.end(),validCurrentSlot)||!std::all_of(data.edits.begin(),data.edits.end(),validEdit))return false;
   std::error_code error;if(!path.parent_path().empty())std::filesystem::create_directories(path.parent_path(),error);if(error)return false;
-  std::ofstream out(path,std::ios::binary|std::ios::trunc);if(!out)return false;
-  out.write(MAGIC_V7.data(),MAGIC_V7.size());const std::uint32_t version=VERSION,editCount=static_cast<std::uint32_t>(data.edits.size()),mobCount=static_cast<std::uint32_t>(data.mobs.size());const auto mode=static_cast<std::uint8_t>(data.mode);
+  AtomicFile file(path);auto& out=file.stream;if(!out)return false;
+  out.write(MAGIC_V8.data(),MAGIC_V8.size());const std::uint32_t version=VERSION,editCount=static_cast<std::uint32_t>(data.edits.size()),mobCount=static_cast<std::uint32_t>(data.mobs.size());const auto mode=static_cast<std::uint8_t>(data.mode);
   if(!out||!writeValue(out,version)||!writeValue(out,data.selectedSlot)||!writeValue(out,mode)||!writeSlot(out,data.cursorStack))return false;
   for(const auto& slot:data.hotbar)if(!writeSlot(out,slot))return false;
   for(const auto& slot:data.backpack)if(!writeSlot(out,slot))return false;
@@ -108,13 +109,14 @@ bool SaveLoad::save(const SaveData& data,const std::filesystem::path& path){
   for(const auto& f:data.furnaces){
     if(!writeValue(out,f.x)||!writeValue(out,f.y)||!writeValue(out,f.z)||!writeSlot(out,f.input)||!writeSlot(out,f.fuel)||!writeSlot(out,f.output)||!writeValue(out,f.fuelRemaining)||!writeValue(out,f.fuelDuration)||!writeValue(out,f.cookProgress))return false;
   }
-  out.flush();return static_cast<bool>(out);
+  if(!writeValue(out,data.seed)||!writeValue(out,data.playerX)||!writeValue(out,data.playerY)||!writeValue(out,data.playerZ)||!writeValue(out,data.yaw)||!writeValue(out,data.pitch)||!writeValue(out,data.timeOfDay))return false;
+  return file.commit();
 }
 
 bool SaveLoad::load(SaveData& out){return load(out,getSavePath());}
 bool SaveLoad::load(SaveData& out,const std::filesystem::path& path){
   std::ifstream in(path,std::ios::binary);if(!in)return false;SaveData data;std::array<char,4> magic{};in.read(magic.data(),magic.size());std::uint32_t version=0;
-  if(!in||!readValue(in,version)||!((magic==MAGIC_V2&&version==2)||(magic==MAGIC_V3&&version==3)||(magic==MAGIC_V4&&version==4)||(magic==MAGIC_V5&&version==5)||(magic==MAGIC_V6&&version==6)||(magic==MAGIC_V7&&version==7))||!readValue(in,data.selectedSlot)||data.selectedSlot<0||data.selectedSlot>=Inventory::HOTBAR_SLOTS)return false;
+  if(!in||!readValue(in,version)||!((magic==MAGIC_V2&&version==2)||(magic==MAGIC_V3&&version==3)||(magic==MAGIC_V4&&version==4)||(magic==MAGIC_V5&&version==5)||(magic==MAGIC_V6&&version==6)||(magic==MAGIC_V7&&version==7)||(magic==MAGIC_V8&&version==8))||!readValue(in,data.selectedSlot)||data.selectedSlot<0||data.selectedSlot>=Inventory::HOTBAR_SLOTS)return false;
   if(version>=6){std::uint8_t mode=0;if(!readValue(in,mode)||mode>static_cast<std::uint8_t>(GameMode::Creative))return false;data.mode=static_cast<GameMode>(mode);}
   if(!readSlot(in,data.cursorStack,version))return false;
   for(auto& slot:data.hotbar)if(!readSlot(in,slot,version))return false;
@@ -133,6 +135,7 @@ bool SaveLoad::load(SaveData& out,const std::filesystem::path& path){
     }
     if(!validFurnaces(data))return false;
   }
+  if(version>=8&&(!readValue(in,data.seed)||!readValue(in,data.playerX)||!readValue(in,data.playerY)||!readValue(in,data.playerZ)||!readValue(in,data.yaw)||!readValue(in,data.pitch)||!readValue(in,data.timeOfDay)||!std::isfinite(data.playerX)||!std::isfinite(data.playerY)||!std::isfinite(data.playerZ)||!std::isfinite(data.yaw)||!std::isfinite(data.pitch)||!std::isfinite(data.timeOfDay)||data.timeOfDay<0||data.timeOfDay>=1))return false;
   if(in.peek()!=std::char_traits<char>::eof())return false;
   out=std::move(data);return true;
 }

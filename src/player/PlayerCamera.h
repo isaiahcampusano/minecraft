@@ -10,7 +10,7 @@ public:
   bool isThirdPerson()const{return pov!=POV::FIRST;}
   void cyclePOV(){pov=static_cast<POV>((static_cast<unsigned char>(pov)+1)%3);}
   void adjustFov(float delta);
-  void updateFov(float dt,bool sprinting);
+  void updateFov(float dt,bool sprinting,bool zoom=false);
   glm::vec3 desiredPosition(const Player&)const;
   glm::vec3 position(const Player&,const World&)const;
   glm::vec3 direction(const Player&,const glm::vec3& cameraPosition)const;

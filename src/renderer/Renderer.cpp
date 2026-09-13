@@ -38,6 +38,26 @@ in float height;out vec4 color;uniform vec3 topColor,bottomColor;void main(){flo
 
 std::array<unsigned char,7> glyph(char c){
   switch(c){
+    case 'a':return{0,0,14,1,15,17,15};case 'b':return{16,16,30,17,17,17,30};case 'c':return{0,0,14,16,16,17,14};
+    case 'd':return{1,1,15,17,17,17,15};case 'e':return{0,0,14,17,31,16,14};case 'f':return{6,9,8,28,8,8,8};
+    case 'g':return{0,15,17,17,15,1,14};case 'h':return{16,16,30,17,17,17,17};case 'i':return{4,0,12,4,4,4,14};
+    case 'j':return{2,0,6,2,2,18,12};case 'k':return{16,16,18,20,24,20,18};case 'l':return{12,4,4,4,4,4,14};
+    case 'm':return{0,0,26,21,21,21,21};case 'n':return{0,0,30,17,17,17,17};case 'o':return{0,0,14,17,17,17,14};
+    case 'p':return{0,30,17,17,30,16,16};case 'q':return{0,15,17,17,15,1,1};case 'r':return{0,0,22,25,16,16,16};
+    case 's':return{0,0,15,16,14,1,30};case 't':return{8,8,28,8,8,9,6};case 'u':return{0,0,17,17,17,19,13};
+    case 'v':return{0,0,17,17,17,10,4};case 'w':return{0,0,17,17,21,21,10};case 'x':return{0,0,17,10,4,10,17};
+    case 'y':return{0,17,17,17,15,1,14};case 'z':return{0,0,31,2,4,8,31};
+    case '"':return{10,10,10,0,0,0,0};case '\'':return{4,4,8,0,0,0,0};case '\\':return{16,16,8,4,2,1,1};
+    case '#':return{10,31,10,10,31,10,0};case '$':return{4,15,20,14,5,30,4};case '%':return{24,25,2,4,8,19,3};
+    case '&':return{12,18,20,8,21,18,13};case '*':return{0,21,14,31,14,21,0};case '@':return{14,17,23,21,23,16,14};
+    case '^':return{4,10,17,0,0,0,0};case '`':return{8,4,0,0,0,0,0};case '{':return{2,4,4,8,4,4,2};case '}':return{8,4,4,2,4,4,8};
+    case '~':return{0,0,9,22,0,0,0};case ';':return{0,4,4,0,4,4,8};
+
+    case 'J':return{7,2,2,2,18,18,12};case 'Q':return{14,17,17,17,21,18,13};case 'Z':return{31,1,2,4,8,16,31};
+    case '|':return{4,4,4,4,4,4,4};case '_':return{0,0,0,0,0,0,31};case '/':return{1,1,2,4,8,16,16};
+    case '<':return{1,2,4,8,4,2,1};case '>':return{16,8,4,2,4,8,16};case '+':return{0,4,4,31,4,4,0};
+    case '(':return{2,4,8,8,8,4,2};case ')':return{8,4,2,2,2,4,8};case '[':return{14,8,8,8,8,8,14};case ']':return{14,2,2,2,2,2,14};
+    case '!':return{4,4,4,4,4,0,4};case '?':return{14,17,1,2,4,0,4};case '=':return{0,31,0,31,0,0,0};case ',':return{0,0,0,0,0,4,8};
     case 'A':return{14,17,17,31,17,17,17};case 'B':return{30,17,17,30,17,17,30};case 'C':return{14,17,16,16,16,17,14};
     case 'D':return{30,17,17,17,17,17,30};case 'E':return{31,16,16,30,16,16,31};case 'F':return{31,16,16,30,16,16,16};
     case 'G':return{14,17,16,23,17,17,14};case 'H':return{17,17,17,31,17,17,17};case 'I':return{14,4,4,4,4,4,14};case 'K':return{17,18,20,24,20,18,17};
@@ -75,10 +95,12 @@ void Renderer::drawOverlay(int width,int height,const std::string& text,const Pl
   auto drawSlot=[&](float x,float y,const ItemStack& stack,bool selected){std::vector<float> border,background;if(selected)appendQuad(border,x-4,y-4,InventoryLayout::SLOT_SIZE+8,InventoryLayout::SLOT_SIZE+8);else appendQuad(border,x-2,y-2,InventoryLayout::SLOT_SIZE+4,InventoryLayout::SLOT_SIZE+4);appendQuad(background,x,y,InventoryLayout::SLOT_SIZE,InventoryLayout::SLOT_SIZE);drawQuads(border,selected?glm::vec4{.95f,.95f,.88f,1.f}:glm::vec4{.38f,.38f,.40f,.95f});drawQuads(background,{.16f,.16f,.18f,.94f});if(stack.empty())return;std::vector<float> swatch;appendQuad(swatch,x+8,y+8,InventoryLayout::SLOT_SIZE-16,InventoryLayout::SLOT_SIZE-16);drawQuads(swatch,itemTint(stack));if(stack.kind==ItemKind::TOOL){const float ratio=std::clamp(stack.durability/static_cast<float>(std::max(1,maxToolDurability(stack.toolTier))),0.f,1.f);std::vector<float> bar,fill;appendQuad(bar,x+5,y+4,InventoryLayout::SLOT_SIZE-10,4);appendQuad(fill,x+5,y+4,(InventoryLayout::SLOT_SIZE-10)*ratio,4);drawQuads(bar,{.08f,.08f,.08f,1.f});drawQuads(fill,{1.f-ratio,ratio,.08f,1.f});}else{const std::string count=std::to_string(stack.count);drawText(count,x+InventoryLayout::SLOT_SIZE-4.f-static_cast<float>(count.size())*6.f,y+10.f,1.f,{1,1,1,1});}};
 
   glDisable(GL_DEPTH_TEST);glDisable(GL_CULL_FACE);glEnable(GL_BLEND);glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+  if(hudVisible){
   std::vector<float> hud;float cx=width*.5f,cy=height*.5f;appendQuad(hud,cx-10,cy-2,20,4);appendQuad(hud,cx-2,cy-10,4,20);drawQuads(hud,{.95f,.95f,.95f,.95f});drawText(text,12.f,height-18.f,2.f,{.05f,.05f,.05f,.9f});
 
+  }
   const float startX=InventoryLayout::hotbarX(width);
-  if(!inventoryOpen){const std::array<unsigned char,7> heart={27,63,127,127,62,28,8},hunger={8,28,30,15,7,14,12};auto drawMeterIcon=[&](const std::array<unsigned char,7>&shape,float x,float y,int value,const glm::vec4&color){std::vector<float>empty,filled;for(int row=0;row<7;++row)for(int col=0;col<7;++col)if(shape[static_cast<std::size_t>(row)]&(1<<(6-col))){appendQuad(empty,x+col*2.f,y+(6-row)*2.f,2.f,2.f);if(value>=2||(value==1&&col<4))appendQuad(filled,x+col*2.f,y+(6-row)*2.f,2.f,2.f);}drawQuads(empty,{.18f,.18f,.18f,.95f});drawQuads(filled,color);};const float meterY=InventoryLayout::HOTBAR_Y+InventoryLayout::SLOT_SIZE+10.f;for(int i=0;i<10;++i){const int healthValue=survivalIconValue(player.survival.health(),i),hungerValue=survivalIconValue(player.survival.hunger(),i);drawMeterIcon(heart,startX+i*16.f,meterY,healthValue,{.82f,.08f,.12f,1.f});drawMeterIcon(hunger,startX+InventoryLayout::hotbarWidth()-160.f+i*16.f,meterY,hungerValue,{.78f,.43f,.12f,1.f});}}
+  if(!inventoryOpen&&hudVisible){const std::array<unsigned char,7> heart={27,63,127,127,62,28,8},hunger={8,28,30,15,7,14,12};auto drawMeterIcon=[&](const std::array<unsigned char,7>&shape,float x,float y,int value,const glm::vec4&color){std::vector<float>empty,filled;for(int row=0;row<7;++row)for(int col=0;col<7;++col)if(shape[static_cast<std::size_t>(row)]&(1<<(6-col))){appendQuad(empty,x+col*2.f,y+(6-row)*2.f,2.f,2.f);if(value>=2||(value==1&&col<4))appendQuad(filled,x+col*2.f,y+(6-row)*2.f,2.f,2.f);}drawQuads(empty,{.18f,.18f,.18f,.95f});drawQuads(filled,color);};const float meterY=InventoryLayout::HOTBAR_Y+InventoryLayout::SLOT_SIZE+10.f;for(int i=0;i<10;++i){const int healthValue=survivalIconValue(player.survival.health(),i),hungerValue=survivalIconValue(player.survival.hunger(),i);drawMeterIcon(heart,startX+i*16.f,meterY,healthValue,{.82f,.08f,.12f,1.f});drawMeterIcon(hunger,startX+InventoryLayout::hotbarWidth()-160.f+i*16.f,meterY,hungerValue,{.78f,.43f,.12f,1.f});}}
   if(inventoryOpen){
     const bool creativeVisible=player.gameMode()==GameMode::Creative;
     const float paletteX=InventoryLayout::paletteX(width),panelTop=InventoryLayout::BACKPACK_Y+InventoryLayout::CREATIVE_PAGE_SIZE*(InventoryLayout::PALETTE_HEIGHT+InventoryLayout::GAP)+20.f;
@@ -103,7 +125,7 @@ void Renderer::drawOverlay(int width,int height,const std::string& text,const Pl
     }else {const int craftSize=tableOpen?3:2;for(int i=0;i<craftSize*craftSize;++i){const int row=i/craftSize,col=i%craftSize;drawSlot(CraftingLayout::gridX(width,tableOpen)+col*(InventoryLayout::SLOT_SIZE+InventoryLayout::GAP),CraftingLayout::BOTTOM+(craftSize-1-row)*(InventoryLayout::SLOT_SIZE+InventoryLayout::GAP),inventory.craftSlot(tableOpen,i),false);}drawSlot(CraftingLayout::outputX(width),CraftingLayout::outputY(tableOpen),inventory.craftingOutput(tableOpen),false);drawText(tableOpen?"TABLE CRAFT":"PERSONAL CRAFT",CraftingLayout::gridX(width,tableOpen),CraftingLayout::BOTTOM+craftSize*(InventoryLayout::SLOT_SIZE+InventoryLayout::GAP)+8.f,1.f,{1,1,1,1});drawText("OUTPUT",CraftingLayout::outputX(width),CraftingLayout::outputY(tableOpen)+62.f,1.f,{1,1,1,1});}
     const float heldX=startX+InventoryLayout::hotbarWidth()+16.f;drawSlot(heldX,InventoryLayout::BACKPACK_Y,inventory.cursorStack(),false);drawText("HELD",heldX,InventoryLayout::BACKPACK_Y+62.f,1.f,{1,1,1,1});
   }
-  for(int i=0;i<Inventory::HOTBAR_SLOTS;++i)drawSlot(startX+i*(InventoryLayout::SLOT_SIZE+InventoryLayout::GAP),InventoryLayout::HOTBAR_Y,inventory.hotbarSlot(i),i==inventory.selectedSlot());
+  for(int i=0;i<(hudVisible||inventoryOpen?Inventory::HOTBAR_SLOTS:0);++i)drawSlot(startX+i*(InventoryLayout::SLOT_SIZE+InventoryLayout::GAP),InventoryLayout::HOTBAR_Y,inventory.hotbarSlot(i),i==inventory.selectedSlot());
   auto hoveredStack=[&](){const auto hit=InventoryLayout::hitTest(mouseX,mouseY,width,height,tableOpen,player.gameMode()==GameMode::Creative,furnace!=nullptr);if(hit.area==InventoryLayout::Area::HOTBAR){if(!inventoryOpen&&hit.index>6)return ItemStack{};return inventory.hotbarSlot(hit.index);}if(!inventoryOpen)return ItemStack{};if(hit.area==InventoryLayout::Area::FURNACE&&furnace)return hit.index==0?furnace->inputSlot:hit.index==1?furnace->fuelSlot:furnace->outputSlot;if(hit.area==InventoryLayout::Area::BACKPACK)return inventory.backpackSlot(hit.index);if(hit.area==InventoryLayout::Area::PERSONAL_CRAFT)return inventory.craftSlot(false,hit.index);if(hit.area==InventoryLayout::Area::TABLE_CRAFT)return inventory.craftSlot(true,hit.index);if(hit.area==InventoryLayout::Area::CRAFT_OUTPUT)return inventory.craftingOutput(tableOpen);if(hit.area==InventoryLayout::Area::HELD)return inventory.cursorStack();if(hit.area==InventoryLayout::Area::CREATIVE){const int itemIndex=creativePage*InventoryLayout::CREATIVE_PAGE_SIZE+hit.index;if(itemIndex>=0&&itemIndex<static_cast<int>(creativeCatalog().size()))return creativeCatalog()[static_cast<std::size_t>(itemIndex)];}return ItemStack{};};
   const ItemStack hovered=hoveredStack();
   if(!hovered.empty()){
@@ -145,4 +167,26 @@ void Renderer::drawFurnaces(const World& world,const glm::mat4& view,const glm::
     m_colorShader.setVec4("tint",color);glDrawArrays(GL_TRIANGLES,0,static_cast<GLsizei>(vertices.size()/3));
   };
   draw(dark,{.045f,.035f,.03f,1});draw(lit,{1.f,.32f,.035f,1});glEnable(GL_CULL_FACE);
+}
+
+void Renderer::drawMenu(const MenuView& menu,const MenuController& controller,int width,int height,bool background){
+  (void)width;(void)height;
+  glDisable(GL_DEPTH_TEST);glDisable(GL_CULL_FACE);glEnable(GL_BLEND);glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+  m_colorShader.use();m_colorShader.setMat4("transform",glm::ortho(0.f,1280.f,720.f,0.f));
+  auto render=[&](const std::vector<float>& v,glm::vec4 color){if(v.empty())return;m_colorShader.setVec4("tint",color);glBindVertexArray(m_lineVao);glBindBuffer(GL_ARRAY_BUFFER,m_lineVbo);glBufferData(GL_ARRAY_BUFFER,v.size()*sizeof(float),v.data(),GL_DYNAMIC_DRAW);glDrawArrays(GL_TRIANGLES,0,static_cast<int>(v.size()/3));};
+  auto quad=[](std::vector<float>& v,float x,float y,float w,float h){const float a[]={x,y,0,x+w,y,0,x+w,y+h,0,x,y,0,x+w,y+h,0,x,y+h,0};v.insert(v.end(),a,a+18);};
+  auto rect=[&](float x,float y,float w,float h,glm::vec4 c){std::vector<float> v;quad(v,x,y,w,h);render(v,c);};
+  auto text=[&](const std::string& value,float x,float y,float size,glm::vec4 c){std::vector<float> v;float px=x,py=y;for(char ch:value){if(ch=='\n'){px=x;py+=10*size;continue;}auto rows=glyph(ch);for(int r=0;r<7;++r)for(int col=0;col<5;++col)if(rows[r]&(1<<(4-col)))quad(v,px+col*size,py+r*size,size,size);px+=6*size;}render(v,c);};
+  if(background){rect(0,0,1280,720,{.035f,.055f,.075f,.96f});rect(120,40,1040,640,{.09f,.12f,.14f,.97f});}
+  text(menu.title,160,64,3,{.9f,.95f,.85f,1});
+  for(std::size_t i=0;i<menu.widgets.size();++i){const auto& w=menu.widgets[i];bool focus=controller.focus==static_cast<int>(i),hover=controller.hover==static_cast<int>(i),pressed=controller.pressed==static_cast<int>(i);
+    rect(w.x-2,w.y-2,w.w+4,w.h+4,focus?glm::vec4{.65f,.84f,.44f,1}:glm::vec4{.24f,.3f,.32f,1});
+    rect(w.x,w.y,w.w,w.h,!w.enabled?glm::vec4{.1f,.12f,.13f,1}:pressed?glm::vec4{.18f,.3f,.18f,1}:hover?glm::vec4{.25f,.34f,.3f,1}:glm::vec4{.16f,.21f,.23f,1});
+    if(w.value>=0)rect(w.x,w.y+w.h-7,w.w*std::clamp(w.value,0.f,1.f),7,{.5f,.75f,.35f,1});
+    text(w.label,w.x+12,w.y+12,w.h<40?1.5f:2.f,w.enabled?glm::vec4{.95f,.95f,.92f,1}:glm::vec4{.5f,.5f,.5f,1});
+  }
+  // Wrap feedback so filesystem and binding errors remain readable.
+  std::string notice=menu.notice;for(std::size_t i=88;i<notice.size();i+=89)notice.insert(i,"\n");
+  text(notice,160,625,1.5f,{.98f,.8f,.45f,1});
+  glDisable(GL_BLEND);glEnable(GL_DEPTH_TEST);glEnable(GL_CULL_FACE);
 }

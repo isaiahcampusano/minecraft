@@ -11,7 +11,7 @@ class Player {
 public:
   static constexpr float WIDTH=.6f,HEIGHT=1.8f,EYE_HEIGHT=1.62f,FULL_AUTO_BREAK_COOLDOWN=.12f,MINING_FIXED_STEP=1.f/120.f,MAX_MINING_FRAME_TIME=.05f;
   explicit Player(glm::vec3 spawn={500.f,8.f,500.f}):position(spawn),m_spawnPosition(spawn){}
-  glm::vec3 position,velocity{0}; float yaw=-90.f,pitch=-15.f; bool onGround=false,isFlying=false;SurvivalState survival;
+  glm::vec3 position,velocity{0}; float yaw=-90.f,pitch=-15.f; bool onGround=false,isFlying=false,isSneaking=false;SurvivalState survival;
   GameMode gameMode() const { return m_gameMode; }
   void setGameMode(GameMode mode);
   const glm::vec3& spawnPosition() const { return m_spawnPosition; }

@@ -54,13 +54,14 @@ int main(){
     }CHECK(!SaveLoad::save(broken,bad));
   }
   CHECK(SaveLoad::save(data,path));const auto original=bytes(path);
-  auto corrupted=original;const double nan=std::numeric_limits<double>::quiet_NaN();std::memcpy(corrupted.data()+corrupted.size()-sizeof(double),&nan,sizeof(double));write(bad,corrupted);
+  auto corrupted=original;const double nan=std::numeric_limits<double>::quiet_NaN();std::memcpy(corrupted.data()+corrupted.size()-28-sizeof(double),&nan,sizeof(double));write(bad,corrupted);
   loaded.selectedSlot=8;CHECK(!SaveLoad::load(loaded,bad)&&loaded.selectedSlot==8);
   for(std::size_t missing=1;missing<=30;++missing){corrupted=original;corrupted.resize(corrupted.size()-missing);write(bad,corrupted);CHECK(!SaveLoad::load(loaded,bad)&&loaded.selectedSlot==8);}
   // Encode older versions from an empty current payload, removing only newer fields.
   SaveData empty;CHECK(SaveLoad::save(empty,path));const auto current=bytes(path);
-  for(std::uint32_t version=2;version<=6;++version){
-    auto old=current;old.resize(old.size()-4); // Furnace count.
+  for(std::uint32_t version=2;version<=7;++version){
+    auto old=current;old.resize(old.size()-28); // MCv8 seed, pose and time.
+    if(version<7)old.resize(old.size()-4); // Furnace count.
     if(version<4)old.resize(old.size()-4); // Mob count.
     if(version<5)old.erase(old.begin()+140,old.begin()+152); // MCv6 spawn coordinates.
     if(version<3)old.erase(old.begin()+124,old.begin()+140); // Survival fields.

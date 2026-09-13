@@ -7,6 +7,7 @@ public:
   static constexpr float NIGHT_START = .50f;
   static constexpr float MORNING_TIME = .25f;
   void update(float dt);
+  void setTime(float value){m_time=value;}
   float time() const { return m_time; }
   bool isNight() const;
   void skipToMorning() { m_time = MORNING_TIME; }

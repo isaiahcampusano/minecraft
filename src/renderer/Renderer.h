@@ -1,5 +1,6 @@
 #pragma once
 #include "Texture.h"
+#include "../core/MenuController.h"
 #include "ParticleSystem.h"
 #include "DropSystem.h"
 #include "../core/Shader.h"
@@ -18,6 +19,9 @@ struct RayHit;
 struct FurnaceState;
 class Renderer {
 public:
+  bool hudVisible=true;
+  void drawMenu(const MenuView&,const MenuController&,int width,int height,bool background=true);
+  bool throwDrop(const glm::vec3& p,const glm::vec3& v,const ItemStack& s,const World& w){return m_drops.tryThrow(p,v,s,w);}
   Renderer(); ~Renderer();
   void spawnBlockBreak(const glm::ivec3& block,BlockType type){m_particles.spawnBlockBreak(block,type);}
   void spawnDrop(const glm::vec3& position,const ItemStack& stack){m_drops.spawn(position,stack);}
