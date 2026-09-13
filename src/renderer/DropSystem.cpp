@@ -68,3 +68,11 @@ void DropSystem::render(const glm::mat4& view,const glm::mat4& projection,const 
 }
 
 std::size_t DropSystem::activeCount()const{return static_cast<std::size_t>(std::count_if(m_drops.begin(),m_drops.end(),[](const Drop&drop){return drop.active;}));}
+
+bool DropSystem::tryThrow(const glm::vec3& position,const glm::vec3& velocity,const ItemStack& stack,const World& world){
+  if(stack.empty()||!std::isfinite(position.x)||!std::isfinite(position.y)||!std::isfinite(position.z)||position.x<.125f||position.z<.125f||position.x>999.875f||position.z>999.875f||position.y<.125f||position.y>255.f)return false;
+  if(!world.isChunkLoadedAt(static_cast<int>(position.x),static_cast<int>(position.z)))return false;
+  for(float x:{-.125f,.125f})for(float y:{-.125f,.125f})for(float z:{-.125f,.125f})if(isSolid(world.getBlock(static_cast<int>(std::floor(position.x+x)),static_cast<int>(std::floor(position.y+y)),static_cast<int>(std::floor(position.z+z)))))return false;
+  for(auto& drop:m_drops)if(!drop.active){drop=Drop{};drop.position=position;drop.velocity=velocity;drop.stack=stack;drop.pickupDelay=.75f;drop.active=true;return true;}
+  return false;
+}

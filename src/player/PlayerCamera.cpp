@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <cmath>
 void PlayerCamera::adjustFov(float delta){baseFov=std::clamp(baseFov+delta,30.f,90.f);}
-void PlayerCamera::updateFov(float dt,bool sprinting){const float target=std::min(baseFov+(sprinting?10.f:0.f),100.f),factor=1.f-std::exp(-8.f*std::max(0.f,dt));fov+=(target-fov)*factor;}
+void PlayerCamera::updateFov(float dt,bool sprinting,bool zoom){const float target=zoom?baseFov*.35f:std::min(baseFov+(sprinting?10.f:0.f),100.f),factor=1.f-std::exp(-8.f*std::max(0.f,dt));fov+=(target-fov)*factor;}
 glm::vec3 PlayerCamera::desiredPosition(const Player&p)const{
   if(pov==POV::FIRST)return p.eyePosition();
   const glm::vec3 pivot=p.position+glm::vec3(0,1.15f,0);

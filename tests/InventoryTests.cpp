@@ -33,7 +33,7 @@ int main() {
   std::array<bool,BLOCK_TYPE_COUNT> seen{};std::size_t creativeCount=0;
   for(BlockType type:allPlaceableBlocks()){auto index=static_cast<std::size_t>(type);if(type==BlockType::AIR||index>=seen.size()||seen[index])return fail("creative block range is invalid");seen[index]=true;++creativeCount;}
   if(creativeCount!=BLOCK_TYPE_COUNT-1)return fail("creative range does not cover every non-air block");
-  const std::size_t expectedCatalog=(BLOCK_TYPE_COUNT-1)+static_cast<std::size_t>(MaterialType::COUNT)+static_cast<std::size_t>(FoodType::COUNT);if(creativeCatalog().size()!=expectedCatalog||creativeCatalog().back().kind!=ItemKind::FOOD||creativeCatalog().back().foodType!=FoodType::RAW_MUTTON)return fail("creative catalog does not include all mob loot items");
+  const std::size_t expectedCatalog=(BLOCK_TYPE_COUNT-1)+static_cast<std::size_t>(MaterialType::COUNT)+static_cast<std::size_t>(FoodType::COUNT);if(creativeCatalog().size()!=expectedCatalog||creativeCatalog().back().kind!=ItemKind::FOOD||creativeCatalog().back().foodType!=FoodType::COOKED_MUTTON)return fail("creative catalog does not include all registered food items");
   if(itemName(ItemStack::tool(ToolKind::PICKAXE,ToolTier::WOOD,60))!="WOOD PICKAXE")return fail("tool item name did not include tier and kind");
   if(itemName(creativeCatalog().front())!=blockName(creativeCatalog().front().blockType))return fail("creative catalog item name did not match the block registry");
   Inventory creative;
@@ -88,6 +88,11 @@ int main() {
   if(abandonedDrag.dragSlotCount()!=1)return fail("a single-slot drag should record exactly one slot");
   abandonedDrag.endDrag();
   if(abandonedDrag.hotbarSlot(0).count!=0||abandonedDrag.cursorStack().count!=4)return fail("a drag that only touched one slot should not distribute");
+
+  Inventory quickMove;
+  quickMove.setHotbarSlot(0,ItemStack::block(BlockType::STONE,64));
+  if(!quickMove.quickMove(Inventory::Area::HOTBAR,0)||!quickMove.hotbarSlot(0).empty()||quickMove.backpackSlot(0).count!=64)return fail("quick move did not route hotbar items to backpack");
+  if(!quickMove.quickMove(Inventory::Area::BACKPACK,0)||quickMove.hotbarSlot(0).count!=64||!quickMove.backpackSlot(0).empty())return fail("quick move did not route backpack items back to hotbar");
 
   return 0;
 }

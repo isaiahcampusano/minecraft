@@ -13,6 +13,14 @@ struct SaveData {
     ToolKind toolKind=ToolKind::PICKAXE;ToolTier toolTier=ToolTier::WOOD;FoodType foodType=FoodType::APPLE;std::uint8_t count=0;std::uint16_t durability=0;
   };
   struct EditData { std::int32_t x=0,y=0,z=0; BlockType type=BlockType::AIR; };
+  struct FurnaceData {
+    std::int32_t x=0,y=0,z=0;
+    SlotData input,fuel,output;
+    double fuelRemaining=0.,fuelDuration=0.,cookProgress=0.;
+  };
+  std::vector<FurnaceData> furnaces;
+  std::uint32_t seed=0;
+  float playerX=500.f,playerY=8.f,playerZ=500.f,yaw=-90.f,pitch=-15.f,timeOfDay=.25f;
   std::int32_t selectedSlot=0;
   GameMode mode=GameMode::Survival;
   SlotData cursorStack{};
@@ -27,7 +35,7 @@ struct SaveData {
 
 class SaveLoad {
 public:
-  static constexpr std::uint32_t VERSION=6;
+  static constexpr std::uint32_t VERSION=8;
   static bool save(const SaveData& data);
   static bool save(const SaveData& data,const std::filesystem::path& path);
   static bool load(SaveData& out);

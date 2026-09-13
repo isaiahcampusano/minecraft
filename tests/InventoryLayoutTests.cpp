@@ -17,6 +17,6 @@ int main(){
   hit=InventoryLayout::hitTest(CraftingLayout::outputX(width)+InventoryLayout::SLOT_SIZE*.5f,height-(CraftingLayout::outputY(true)+InventoryLayout::SLOT_SIZE*.5f),width,height,true);
   if(hit.area!=InventoryLayout::Area::CRAFT_OUTPUT)return fail("crafting output slot was not detected");
   hit=InventoryLayout::hitTest(startX+InventoryLayout::hotbarWidth()+16.f+InventoryLayout::SLOT_SIZE*.5f,height-(InventoryLayout::BACKPACK_Y+InventoryLayout::SLOT_SIZE*.5f),width,height,true);
-  if(hit.area!=InventoryLayout::Area::HELD)return fail("held item slot was not detected");
+  if(hit.area!=InventoryLayout::Area::NONE)return fail("former held item slot must not be interactive");
   return 0;
 }

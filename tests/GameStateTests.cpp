@@ -21,5 +21,14 @@ int main(){
   if(restoredWorld.getBlock(17,8,17)!=BlockType::LEAVES||restoredWorld.getBlock(18,6,18)!=BlockType::AIR)return fail("nearby placed/broken blocks were not restored");
   if(restoredWorld.getBlock(900,8,900)!=BlockType::GLASS)return fail("distant edit was not restored when its chunk loaded");
   if(restoredWorld.getEditEntries().size()!=3)return fail("restored edit overlay was incomplete");
+  sourceWorld.setBlock(22,8,22,BlockType::FURNACE);
+  ItemStack furnaceCursor=ItemStack::food(FoodType::RAW_MUTTON,4);sourceWorld.interactFurnace({22,8,22},FurnaceSlot::Input,furnaceCursor);
+  furnaceCursor=ItemStack::block(BlockType::PLANKS,2);sourceWorld.interactFurnace({22,8,22},FurnaceSlot::Fuel,furnaceCursor);
+  sourceWorld.tickFurnaces(12.);sourceWorld.unloadChunk(1,1);
+  const auto cookingSave=GameState::capture(sourceInventory,sourceWorld,sourcePlayer,sourceMobs);
+  if(cookingSave.furnaces.size()!=1)return fail("unloaded furnace missing from capture");
+  GameState::apply(cookingSave,restoredInventory,restoredWorld,restoredPlayer,restoredMobs);restoredWorld.loadChunk(1,1);
+  const auto* furnace=restoredWorld.furnaceAt({22,8,22});
+  if(!furnace||furnace->outputSlot.count!=1||furnace->cookProgress!=2.||furnace->fuelRemaining!=3.)return fail("GameState lost cooking state");
   return 0;
 }

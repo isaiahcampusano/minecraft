@@ -4,7 +4,7 @@
 #include <cmath>
 glm::vec3 Player::forward()const{glm::vec3 f{std::cos(glm::radians(yaw))*std::cos(glm::radians(pitch)),std::sin(glm::radians(pitch)),std::sin(glm::radians(yaw))*std::cos(glm::radians(pitch))};return glm::normalize(f);}
 glm::vec3 Player::right()const{return glm::normalize(glm::cross(forward(),glm::vec3{0,1,0}));}
-void Player::look(float dx,float dy){yaw+=dx*.1f;pitch=glm::clamp(pitch+dy*.1f,-89.f,89.f);}
+void Player::look(float dx,float dy){yaw+=dx;pitch=glm::clamp(pitch+dy,-89.f,89.f);}
 void Player::update(float dt,const World&w){PlayerPhysics::update(*this,dt,w);}
 bool Player::jump(bool sprinting){if(!onGround||isFlying)return false;velocity.y=8.5f;onGround=false;if(m_gameMode==GameMode::Survival)survival.addExhaustion(sprinting?.2f:.05f);return true;}
 void Player::toggleFly(){isFlying=!isFlying;velocity.y=0;if(isFlying)survival.resetFallDistance();}

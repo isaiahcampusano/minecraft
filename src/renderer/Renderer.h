@@ -1,5 +1,6 @@
 #pragma once
 #include "Texture.h"
+#include "../core/MenuController.h"
 #include "ParticleSystem.h"
 #include "DropSystem.h"
 #include "../core/Shader.h"
@@ -15,17 +16,22 @@ class PassiveMobSystem;
 class Inventory;
 class DayNightCycle;
 struct RayHit;
+struct FurnaceState;
 class Renderer {
 public:
+  bool hudVisible=true;
+  void drawMenu(const MenuView&,const MenuController&,int width,int height,bool background=true);
+  bool throwDrop(const glm::vec3& p,const glm::vec3& v,const ItemStack& s,const World& w){return m_drops.tryThrow(p,v,s,w);}
   Renderer(); ~Renderer();
   void spawnBlockBreak(const glm::ivec3& block,BlockType type){m_particles.spawnBlockBreak(block,type);}
   void spawnDrop(const glm::vec3& position,const ItemStack& stack){m_drops.spawn(position,stack);}
   void updateDrops(float dt,const World& world,const glm::vec3& playerPosition,const DropSystem::PickupHandler& tryPickup){m_drops.update(dt,world,playerPosition,tryPickup);}
-  void draw(const World&,const Player&,const PassiveMobSystem&,bool showPlayer,float deltaTime,bool mining,float useSwingTimer,const glm::mat4&,const glm::mat4&,const glm::vec3& camera,const RayHit&,int width,int height,const std::string& hud,const Inventory&,bool inventoryOpen,bool tableOpen,int creativePage,float mouseX,float mouseY,const DayNightCycle&,int menuState=0,int viewDistance=4);
+  void draw(const World&,const Player&,const PassiveMobSystem&,bool showPlayer,float deltaTime,bool mining,float useSwingTimer,const glm::mat4&,const glm::mat4&,const glm::vec3& camera,const RayHit&,int width,int height,const std::string& hud,const Inventory&,bool inventoryOpen,bool tableOpen,int creativePage,float mouseX,float mouseY,const DayNightCycle&,int menuState=0,int viewDistance=4,const FurnaceState* furnace=nullptr);
 private:
   Shader m_shader,m_colorShader,m_skyShader; Texture m_texture; ParticleSystem m_particles; DropSystem m_drops;
   GLuint m_lineVao=0,m_lineVbo=0,m_skyVao=0,m_skyVbo=0;
   std::unique_ptr<PlayerRenderer> m_playerRenderer;
   std::unique_ptr<MobRenderer> m_mobRenderer;
-  void drawSky(const DayNightCycle&); void drawOutline(const RayHit&,const glm::mat4&,const glm::mat4&); void drawMiningCrack(const glm::ivec3&,float,const glm::mat4&,const glm::mat4&);   void drawOverlay(int,int,const std::string&,const Player&,const Inventory&,bool inventoryOpen,bool tableOpen,int creativePage,float mouseX,float mouseY,int menuState,int viewDistance);
+  void drawSky(const DayNightCycle&); void drawOutline(const RayHit&,const glm::mat4&,const glm::mat4&); void drawMiningCrack(const glm::ivec3&,float,const glm::mat4&,const glm::mat4&);   void drawOverlay(int,int,const std::string&,const Player&,const Inventory&,bool inventoryOpen,bool tableOpen,int creativePage,float mouseX,float mouseY,int menuState,int viewDistance,const FurnaceState* furnace);
+  void drawFurnaces(const World&,const glm::mat4&,const glm::mat4&);
 };
