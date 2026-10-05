@@ -96,4 +96,24 @@ if(BUILD_TESTING)
   mc_add_test(SeedSneakTests seed_sneak MinecraftLogic)
   mc_add_test(MenusApplicationTests menus_application MinecraftLib)
   set_tests_properties(menus_application PROPERTIES SKIP_RETURN_CODE 77)
+  mc_add_test(ChunkTests chunk MinecraftLogic)
+  mc_add_test(FrustumTests frustum MinecraftLogic)
+  mc_add_test(LightingEquivalenceTests lighting_equivalence MinecraftLogic)
+  # Visual equivalence for culling + maxY (ported to the ChunkRenderer
+  # architecture). GL-gated like the other GL tests; GLFW_INCLUDE_NONE lets
+  # it build where system GL headers are missing.
+  add_executable(VisualEquivalenceTests tests/VisualEquivalenceTests.cpp)
+  target_include_directories(VisualEquivalenceTests PRIVATE src)
+  target_compile_definitions(VisualEquivalenceTests PRIVATE GLFW_INCLUDE_NONE)
+  target_link_libraries(VisualEquivalenceTests PRIVATE MinecraftRender glfw glad_gl_core_33)
+  add_test(NAME visual_equivalence COMMAND VisualEquivalenceTests)
+  set_tests_properties(visual_equivalence PROPERTIES SKIP_RETURN_CODE 77)
 endif()
+
+# Headless renderer benchmark (Sodium-style perf pass, ported to the
+# ChunkRenderer architecture). Needs a GL context; run under Xvfb.
+# Not part of ctest.
+add_executable(PerfBench bench/perf_bench.cpp)
+target_include_directories(PerfBench PRIVATE src)
+target_compile_definitions(PerfBench PRIVATE GLFW_INCLUDE_NONE)
+target_link_libraries(PerfBench PRIVATE MinecraftRender glfw glad_gl_core_33)

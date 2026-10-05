@@ -31,7 +31,10 @@ CraftingRecipe shaped(int width,int height,std::initializer_list<RecipeIngredien
 }
 CraftingRecipe shapeless(int width,int height,std::initializer_list<RecipeIngredient> ingredients,const ItemStack& output){auto recipe=shaped(width,height,ingredients,output);recipe.shapeless=true;return recipe;}
 ItemStack tool(ToolKind kind,ToolTier tier){return ItemStack::tool(kind,tier,maxToolDurability(tier));}
-RecipeIngredient tierMaterial(ToolTier tier){return block(tier==ToolTier::WOOD?BlockType::PLANKS:BlockType::COBBLESTONE);}
+RecipeIngredient tierMaterial(ToolTier tier){
+  if(tier==ToolTier::IRON){RecipeIngredient ingot;ingot.kind=ItemKind::MATERIAL;ingot.materialType=MaterialType::IRON_INGOT;return ingot;}
+  return block(tier==ToolTier::WOOD?BlockType::PLANKS:BlockType::COBBLESTONE);
+}
 void addToolRecipes(std::vector<CraftingRecipe>& recipes,ToolTier tier){
   const auto m=tierMaterial(tier),s=material(MaterialType::STICK),e=block(BlockType::AIR);
   recipes.push_back(shaped(3,3,{m,m,m,e,s,e,e,s,e},tool(ToolKind::PICKAXE,tier)));
@@ -51,7 +54,7 @@ const std::vector<CraftingRecipe>& CraftingRegistry::recipes(){
     result.push_back(shaped(3,2,{material(MaterialType::WHITE_WOOL),material(MaterialType::WHITE_WOOL),material(MaterialType::WHITE_WOOL),block(BlockType::PLANKS),block(BlockType::PLANKS),block(BlockType::PLANKS)},ItemStack::block(BlockType::BED)));
     const auto c=block(BlockType::COBBLESTONE),e=block(BlockType::AIR);
     result.push_back(shaped(3,3,{c,c,c,c,e,c,c,c,c},ItemStack::block(BlockType::FURNACE)));
-    addToolRecipes(result,ToolTier::WOOD);addToolRecipes(result,ToolTier::STONE);return result;
+    addToolRecipes(result,ToolTier::WOOD);addToolRecipes(result,ToolTier::STONE);addToolRecipes(result,ToolTier::IRON);return result;
   }();
   return value;
 }

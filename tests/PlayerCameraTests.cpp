@@ -1,13 +1,14 @@
 #include "player/PlayerCamera.h"
 #include "player/Player.h"
 #include "world/World.h"
+#include "world/WorldGenerator.h"
 #include <cmath>
 #include <iostream>
 
 namespace{int fail(const char*message){std::cerr<<message<<'\n';return 1;}bool near(const glm::vec3&a,const glm::vec3&b,float epsilon=.06f){return glm::length(a-b)<epsilon;}}
 
 int main(){
-  World world;Player player({500.f,8.f,500.f});world.loadChunk(31,31);PlayerCamera camera;
+  World world;const float ground=static_cast<float>(WorldGenerator::surfaceHeightAt(500,500,world.seed()))+1.f;Player player({500.f,ground,500.f});world.loadChunk(31,31);PlayerCamera camera;
   if(camera.pov!=PlayerCamera::POV::FIRST||camera.isThirdPerson())return fail("Camera did not default to first person");
   if(!near(camera.position(player,world),player.eyePosition()))return fail("First-person camera position changed");
   camera.pov=PlayerCamera::POV::THIRD_BACK;if(!camera.isThirdPerson())return fail("THIRD_BACK did not report as third person");const glm::vec3 desired=camera.desiredPosition(player);if(!near(camera.position(player,world),desired))return fail("Unobstructed third-person camera did not reach its desired offset");

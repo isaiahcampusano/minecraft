@@ -22,9 +22,9 @@ struct FurnaceState {
   }
   bool valid()const{
     if(!validStack(inputSlot)||!validStack(fuelSlot)||!validStack(outputSlot)||!accepts(FurnaceSlot::Input,inputSlot)||!accepts(FurnaceSlot::Fuel,fuelSlot))return false;
-    if(!outputSlot.empty()&&(outputSlot.kind!=ItemKind::FOOD||outputSlot.foodType<FoodType::COOKED_BEEF||outputSlot.foodType>FoodType::COOKED_MUTTON))return false;
+    if(!outputSlot.empty()&&!SmeltingRegistry::isProduct(outputSlot))return false;
     return std::isfinite(fuelRemaining)&&std::isfinite(fuelDuration)&&std::isfinite(cookProgress)&&
-      fuelRemaining>=0.&&fuelRemaining<=fuelDuration&&(fuelDuration==0.||fuelDuration==5.||fuelDuration==15.)&&
+      fuelRemaining>=0.&&fuelRemaining<=fuelDuration&&(fuelDuration==0.||fuelDuration==5.||fuelDuration==15.||fuelDuration==60.)&&
       cookProgress>=0.&&cookProgress<10.&&(cookProgress==0.||SmeltingRegistry::match(inputSlot));
   }
   // This is the only UI mutation path; recipe progress belongs to the input type.
@@ -35,7 +35,7 @@ struct FurnaceState {
       if(item.empty()||(!cursor.empty()&&!sameItemType(item,cursor)))return false;
       const int amount=std::min(item.count,64-(cursor.empty()?0:cursor.count));
       if(amount<=0)return false;
-      if(cursor.empty())cursor=ItemStack::food(item.foodType,amount);else cursor.count+=amount;
+      if(cursor.empty())cursor=stackWithCount(item,amount);else cursor.count+=amount;
       item.count-=amount;if(item.count==0)item={};
     }else{
       if(!accepts(slot,cursor))return false;
@@ -53,7 +53,7 @@ struct FurnaceState {
     constexpr double epsilon=1e-9;
     while(dt>epsilon){
       const auto* recipe=SmeltingRegistry::match(inputSlot);
-      const bool canCook=recipe&&(outputSlot.empty()||(outputSlot.kind==ItemKind::FOOD&&outputSlot.foodType==recipe->output&&outputSlot.count<64));
+      const bool canCook=recipe&&(outputSlot.empty()||(sameItemType(outputSlot,recipe->output)&&outputSlot.count<64));
       if(!lit()){
         fuelRemaining=0.;fuelDuration=0.;
         if(!canCook)return;
@@ -65,9 +65,8 @@ struct FurnaceState {
       if(canCook)step=std::min(step,recipe->cookTimeSeconds-cookProgress);
       fuelRemaining-=step;dt-=step;if(canCook)cookProgress+=step;
       if(canCook&&cookProgress+epsilon>=recipe->cookTimeSeconds){
-        const FoodType output=recipe->output;
         if(--inputSlot.count==0)inputSlot={};
-        if(outputSlot.empty())outputSlot=ItemStack::food(output);else ++outputSlot.count;
+        if(outputSlot.empty())outputSlot=stackWithCount(recipe->output,1);else ++outputSlot.count;
         cookProgress=0.;
       }
       if(fuelRemaining<epsilon){fuelRemaining=0.;fuelDuration=0.;}

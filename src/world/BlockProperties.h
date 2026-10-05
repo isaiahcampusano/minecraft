@@ -14,7 +14,7 @@ struct BlockProperties {
 };
 
 const BlockProperties& getBlockProperties(BlockType type);
-BlockType miningDrop(BlockType mined);
+ItemStack miningDrop(BlockType mined);
 bool toolMatches(const ItemStack& held,const BlockProperties& properties);
 float miningSpeedMultiplier(const ItemStack& held,const BlockProperties& properties);
 bool canDropBlock(const ItemStack& held,const BlockProperties& properties);

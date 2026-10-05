@@ -7,8 +7,8 @@
 
 namespace{
 int fail(const char* message){std::cerr<<message<<'\n';return 1;}
-void flatten(World& world,int centerX,int centerZ,int radius){for(int z=centerZ-radius;z<=centerZ+radius;++z)for(int x=centerX-radius;x<=centerX+radius;++x){world.setBlock(x,6,z,BlockType::GRASS);world.setBlock(x,7,z,BlockType::AIR);world.setBlock(x,8,z,BlockType::AIR);}}
-glm::ivec3 findGrass(World& world){for(int z=460;z<=540;++z)for(int x=460;x<=540;++x)if(world.getBlock(x,6,z)==BlockType::GRASS&&world.skyLight(x,7,z)>=9)return{x,7,z};return{-1,-1,-1};}
+void flatten(World& world,int centerX,int centerZ,int radius){for(int z=centerZ-radius;z<=centerZ+radius;++z)for(int x=centerX-radius;x<=centerX+radius;++x){for(int y=1;y<=120;++y)world.setBlock(x,y,z,BlockType::AIR);world.setBlock(x,6,z,BlockType::GRASS);}}
+glm::ivec3 findGrass(World& world){for(int z=460;z<=540;++z)for(int x=460;x<=540;++x)for(int y=120;y>=1;--y)if(world.getBlock(x,y,z)==BlockType::GRASS&&!isSolid(world.getBlock(x,y+1,z))&&world.skyLight(x,y+1,z)>=9)return{x,y+1,z};return{-1,-1,-1};}
 }
 
 int main(){

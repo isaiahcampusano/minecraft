@@ -48,7 +48,10 @@ int main(){
   int result=0;
   {
     Chunk flat({0,0});makeSuperflat(flat);
-    const Fingerprint flatExpected{3328,4992,0x3539234e5ebf9dd1ull,0x05ecadf1f8948b25ull};
+    // Golden hashes recorded with 18 block types (COAL_ORE/IRON_ORE extend the
+    // atlas vs the original 16-type golden). Geometry/topology are unchanged:
+    // vertex/index counts and the index hashes match the pre-ore golden.
+    const Fingerprint flatExpected{3328,4992,0x9c6821bf96f99fd1ull,0x05ecadf1f8948b25ull};
     const auto flatActual=meshFingerprint(flat);
     if(flatActual.vertices!=flatExpected.vertices||flatActual.indices!=flatExpected.indices||
        flatActual.vertexHash!=flatExpected.vertexHash||flatActual.indexHash!=flatExpected.indexHash){
@@ -59,7 +62,7 @@ int main(){
     edited.setBlock(0,6,0,BlockType::LEAVES);
     edited.setBlock(15,5,15,BlockType::STONE);
     edited.setBlock(15,6,15,BlockType::GLASS);
-    const Fingerprint editedExpected{3392,5088,0x205dea95e3f352bdull,0x2aa844935d733725ull};
+    const Fingerprint editedExpected{3392,5088,0xe1a8f0c85ed006edull,0x2aa844935d733725ull};
     const auto editedActual=meshFingerprint(edited);
     if(editedActual.vertices!=editedExpected.vertices||editedActual.indices!=editedExpected.indices||
        editedActual.vertexHash!=editedExpected.vertexHash||editedActual.indexHash!=editedExpected.indexHash){

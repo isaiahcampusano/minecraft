@@ -3,7 +3,9 @@
 #include <queue>
 
 Chunk::Chunk(glm::ivec2 p):m_position(p){m_blocks.fill(BlockType::AIR);}
-void Chunk::setBlock(int x,int y,int z,BlockType t){if(x>=0&&x<SIZE_X&&y>=0&&y<SIZE_Y&&z>=0&&z<SIZE_Z&&m_blocks[index(x,y,z)]!=t){m_blocks[index(x,y,z)]=t;markLightingDirty();}}
+void Chunk::setBlock(int x,int y,int z,BlockType t){if(x>=0&&x<SIZE_X&&y>=0&&y<SIZE_Y&&z>=0&&z<SIZE_Z&&m_blocks[index(x,y,z)]!=t){m_blocks[index(x,y,z)]=t;markLightingDirty();
+  if(t==BlockType::AIR){if(y==m_maxY){int ny=y;while(ny>=0&&levelEmpty(ny))--ny;m_maxY=ny;}}
+  else if(y>m_maxY)m_maxY=y;}}
 BlockType Chunk::getBlock(int x,int y,int z)const{return x>=0&&x<SIZE_X&&y>=0&&y<SIZE_Y&&z>=0&&z<SIZE_Z?m_blocks[index(x,y,z)]:BlockType::AIR;}
 namespace {
 constexpr int DIRECTIONS[6][3]={{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};
@@ -72,7 +74,7 @@ void Chunk::computeSkyLight(const std::function<BlockType(int,int,int)>& at){
   m_lightingDirty=false;m_meshDirty=true;
 }
 
-ChunkMeshData Chunk::buildMeshData(const std::function<BlockType(int,int,int)>& at){
+ChunkMeshData Chunk::buildMeshData(const std::function<BlockType(int,int,int)>& at, bool useMaxYBound){
   if(m_lightingDirty)computeSkyLight(at);
   ChunkMeshData data;auto& v=data.vertices;auto& idx=data.indices;v.reserve(4096);idx.reserve(6144);
   static constexpr int dirs[6][3]={{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};
@@ -81,10 +83,16 @@ ChunkMeshData Chunk::buildMeshData(const std::function<BlockType(int,int,int)>& 
     {{0,1,1},{1,1,1},{1,1,0},{0,1,0}},{{0,0,0},{1,0,0},{1,0,1},{0,0,1}},
     {{1,0,1},{1,1,1},{0,1,1},{0,0,1}},{{0,0,0},{0,1,0},{1,1,0},{1,0,0}}};
   const int ox=m_position.x*SIZE_X,oz=m_position.y*SIZE_Z;
-  for(int y=0;y<SIZE_Y;++y)for(int z=0;z<SIZE_Z;++z)for(int x=0;x<SIZE_X;++x){
+  const int topY=useMaxYBound?m_maxY:SIZE_Y-1;
+  for(int y=0;y<=topY;++y)for(int z=0;z<SIZE_Z;++z)for(int x=0;x<SIZE_X;++x){
     BlockType type=getBlock(x,y,z);if(type==BlockType::AIR)continue;
     int tile=static_cast<int>(type);if(tile<0||tile>=static_cast<int>(BLOCK_TYPE_COUNT))tile=static_cast<int>(BlockType::BEDROCK);float u0=(tile+.02f)/static_cast<float>(BLOCK_TYPE_COUNT),u1=(tile+.98f)/static_cast<float>(BLOCK_TYPE_COUNT);
-    for(int f=0;f<6;++f){int wx=ox+x,wz=oz+z;if(isSolid(at(wx+dirs[f][0],y+dirs[f][1],wz+dirs[f][2])))continue;
+    for(int f=0;f<6;++f){
+      const int nx=x+dirs[f][0],ny=y+dirs[f][1],nz=z+dirs[f][2];
+      const BlockType nt=(nx>=0&&nx<SIZE_X&&ny>=0&&ny<SIZE_Y&&nz>=0&&nz<SIZE_Z)
+          ?m_blocks[index(nx,ny,nz)]:at(ox+nx,ny,oz+nz);
+      if(isSolid(nt))continue;
+      const int wx=ox+x,wz=oz+z;
       unsigned base=static_cast<unsigned>(v.size());float us[4]={u0,u0,u1,u1},vs[4]={0,1,1,0};
       float light=faceShade(x,y,z,f);for(int n=0;n<4;++n)v.push_back({wx+q[f][n][0],y+q[f][n][1],wz+q[f][n][2],us[n],vs[n],light});
       idx.insert(idx.end(),{base,base+1,base+2,base,base+2,base+3});
@@ -92,6 +100,6 @@ ChunkMeshData Chunk::buildMeshData(const std::function<BlockType(int,int,int)>& 
   return data;
 }
 
-void Chunk::buildScheduledMeshData(const std::function<BlockType(int,int,int)>& at){
-  m_meshData=buildMeshData(at);m_meshDataPending=true;m_meshDirty=false;m_ready=true;
+void Chunk::buildScheduledMeshData(const std::function<BlockType(int,int,int)>& at, bool useMaxYBound){
+  m_meshData=buildMeshData(at,useMaxYBound);m_meshDataPending=true;m_meshDirty=false;m_ready=true;
 }

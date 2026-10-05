@@ -11,17 +11,18 @@
 bool near(double a,double b){return std::abs(a-b)<1e-6;}
 FurnaceState stocked(){FurnaceState f;f.inputSlot=ItemStack::food(FoodType::RAW_BEEF,16);f.fuelSlot=ItemStack::block(BlockType::PLANKS,16);return f;}
 int main(){
-  CHECK(SmeltingRegistry::recipes().size()==3);
+  CHECK(SmeltingRegistry::recipes().size()==4);
   for(const auto& r:SmeltingRegistry::recipes()){
     CHECK(SmeltingRegistry::match(r.input)==&r);CHECK(r.cookTimeSeconds==10.);
-    FurnaceState f;f.inputSlot=ItemStack::food(r.input);f.fuelSlot=ItemStack::material(MaterialType::STICK,2);f.tick(10.);
-    CHECK(f.outputSlot.foodType==r.output&&f.outputSlot.count==1&&f.inputSlot.empty()&&!f.lit());
+    FurnaceState f;f.inputSlot=r.input;f.fuelSlot=ItemStack::material(MaterialType::STICK,2);f.tick(10.);
+    CHECK(sameItemType(f.outputSlot,r.output)&&f.outputSlot.count==1&&f.inputSlot.empty()&&!f.lit());
   }
-  CHECK(!SmeltingRegistry::match(FoodType::APPLE));CHECK(!SmeltingRegistry::match(ItemStack::block(BlockType::DIRT)));
-  CHECK(!SmeltingRegistry::match(static_cast<FoodType>(255)));
+  CHECK(!SmeltingRegistry::match(ItemStack::food(FoodType::APPLE)));CHECK(!SmeltingRegistry::match(ItemStack::block(BlockType::DIRT)));
+  CHECK(!SmeltingRegistry::match(ItemStack{}));
   CHECK(FuelRegistry::burnTime(ItemStack::block(BlockType::PLANKS))==15.);
   CHECK(FuelRegistry::burnTime(ItemStack::block(BlockType::OAK_LOG))==15.);
   CHECK(FuelRegistry::burnTime(ItemStack::material(MaterialType::STICK))==5.);
+  CHECK(FuelRegistry::burnTime(ItemStack::material(MaterialType::COAL))==60.);
   CHECK(FuelRegistry::burnTime(ItemStack::food(FoodType::RAW_BEEF))==0.);
   CHECK(FuelRegistry::burnTime(ItemStack{})==0.);
   auto f=stocked();f.fuelSlot=ItemStack::material(MaterialType::STICK);f.tick(5.);
@@ -69,8 +70,18 @@ int main(){
     CHECK(FurnaceLayout::hitTest(r.x+r.w,r.y,width)!=i);
   }
   for(const auto& r:SmeltingRegistry::recipes()){
-    SurvivalState survival;survival.restore(20,0,0,0);CHECK(survival.eat(r.output));
-    const auto props=foodProperties(r.output);CHECK(survival.hunger()==props.nutrition&&near(survival.saturation(),props.saturation));
+    if(r.output.kind!=ItemKind::FOOD)continue;
+    SurvivalState survival;survival.restore(20,0,0,0);CHECK(survival.eat(r.output.foodType));
+    const auto props=foodProperties(r.output.foodType);CHECK(survival.hunger()==props.nutrition&&near(survival.saturation(),props.saturation));
+  }
+  {
+    // Iron ore smelts into an iron ingot on coal fuel.
+    FurnaceState f;f.inputSlot=ItemStack::block(BlockType::IRON_ORE,2);f.fuelSlot=ItemStack::material(MaterialType::COAL);
+    f.tick(10.);
+    CHECK(f.outputSlot.kind==ItemKind::MATERIAL&&f.outputSlot.materialType==MaterialType::IRON_INGOT&&f.outputSlot.count==1);
+    CHECK(f.inputSlot.count==1&&near(f.fuelRemaining,50.)&&f.valid());
+    ItemStack cursor;CHECK(f.interact(FurnaceSlot::Output,cursor));
+    CHECK(cursor.kind==ItemKind::MATERIAL&&cursor.materialType==MaterialType::IRON_INGOT&&cursor.count==1&&f.outputSlot.empty());
   }
   return 0;
 }

@@ -15,7 +15,9 @@ struct CookingApplicationTests {
   }
   static void exercise(){
     {
-      Application a(false);WorldInfo info;std::string error;REQUIRE(a.m_repository.create("Cooking",0,GameMode::Survival,info,error));REQUIRE(a.enterWorld(info));a.m_world.setTaskBudgets(0,0,0);a.m_player.position={500,7,500};a.m_player.yaw=-90;a.m_player.pitch=-15;
+      Application a(false);WorldInfo info;std::string error;REQUIRE(a.m_repository.create("Cooking",0,GameMode::Survival,info,error));REQUIRE(a.enterWorld(info));a.m_world.setTaskBudgets(0,0,0);
+      for(int x=496;x<=504;++x)for(int z=494;z<=502;++z){for(int y=1;y<=20;++y)a.m_world.setBlock(x,y,z,BlockType::AIR);a.m_world.setBlock(x,6,z,BlockType::GRASS);}
+      a.m_player.position={500,7,500};a.m_player.yaw=-90;a.m_player.pitch=-15;
       a.m_player.setGameMode(GameMode::Creative);a.m_player.toggleFly();
       REQUIRE(a.m_world.setBlock(500,7,497,BlockType::FURNACE));
       Application::mouseButton(a.m_window,GLFW_MOUSE_BUTTON_RIGHT,GLFW_PRESS,0);
